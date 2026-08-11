@@ -1,8 +1,7 @@
-<<<<<<< HEAD
 # Upstairs Reader
 
 <p align="center">
-  <strong>A self-hosted, multi-user RSS reader with AI summarization, TTS narration, and a newspaper-style reading experience.</strong>
+  <strong>一个可自托管的多用户 RSS 阅读器，支持 AI 文章摘要、TTS 语音朗读和报纸式阅读体验。</strong>
 </p>
 
 <p align="center">
@@ -12,39 +11,39 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+  <strong>简体中文</strong> | <a href="README.en.md">English</a>
 </p>
 
 ---
 
-## Features
+## 特性
 
-- **Multi-user support** — Registration, login, per-user read status, stars, and notes
-- **RSS/Atom parsing** — Add any RSS or Atom feed URL; automatic periodic refresh
-- **Feed organization** — Group feeds into custom categories (Tech, News, Blogs, etc.)
-- **AI article summarization** — One-click summaries via OpenAI-compatible APIs (OpenAI, Aliyun Bailian, local LLMs)
-- **TTS audio narration** — Automatically generates audio for starred articles (MiMo TTS or compatible)
-- **Newspaper view** — A random curated newspaper-style reading mode with cover images
-- **Personal profile pages** — Public pages showing starred articles and notes per user
-- **Dark / Light themes** — Glass-morphism UI with system theme detection
-- **Traditional / Simplified Chinese** — Built-in zh-Hant ↔ zh-Hans toggle
-- **Docker support** — One-command deployment with `docker compose up`
-- **Fever API compatible** — Works with RSS clients that support the Fever API protocol
+- **多用户支持** — 注册、登录，每位用户独立的已读/收藏/笔记状态
+- **RSS/Atom 解析** — 添加任意 RSS 或 Atom 订阅源，自动定时刷新
+- **订阅分组** — 将订阅源归入自定义分类（科技、新闻、博客等）
+- **AI 文章摘要** — 一键调用兼容 OpenAI 的 API 生成文章摘要（支持 OpenAI、阿里云百炼、本地大模型）
+- **TTS 语音朗读** — 收藏文章时自动合成语音（支持 MiMo TTS 及兼容接口）
+- **报纸视图** — 随机精选的报纸式阅读模式，带封面图片
+- **个人主页** — 每位用户的公开页面，展示收藏和笔记
+- **深色 / 浅色主题** — 玻璃质感 UI，跟随系统主题自动切换
+- **繁简中文切换** — 内置简体中文 ↔ 繁體中文一键切换
+- **Docker 部署** — `docker compose up` 一键启动
+- **Fever API 兼容** — 支持 Fever 协议的 RSS 客户端
 
-## Tech Stack
+## 技术栈
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Flask (Python) |
-| Database | SQLite |
-| RSS parsing | feedparser |
-| AI / TTS | OpenAI-compatible API |
-| Frontend | Vanilla JS + CSS (no bundler) |
-| Deployment | Docker + Docker Compose |
+| 层级 | 技术 |
+|------|------|
+| 后端 | Flask（Python） |
+| 数据库 | SQLite |
+| RSS 解析 | feedparser |
+| AI / TTS | OpenAI 兼容 API |
+| 前端 | 原生 JS + CSS（无需打包工具） |
+| 部署 | Docker + Docker Compose |
 
-## Quick Start
+## 快速开始
 
-### Local Development
+### 本地开发
 
 ```bash
 git clone https://github.com/your-username/upstairs-reader.git
@@ -53,132 +52,116 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open **http://localhost:5321**
-=======
-# Upstairs RSS
+打开 **http://localhost:5321**
 
-一个简洁的 RSS 阅读器，支持自托管部署。
+> 第一个注册的用户自动成为管理员。
 
-## 功能特性
-
-- **RSS 订阅管理**：添加、删除、分组管理 RSS 源
-- **文章阅读**：支持列表/网格视图，已读/未读标记，收藏功能
-- **AI 摘要**：集成大语言模型 API，自动为长文生成摘要（可选开启）
-- **多语言界面**：支持简体中文、繁体中文切换
-- **响应式设计**：适配桌面和移动端
-- **用户系统**：支持多用户，管理员可控制开放注册
-- **自动刷新**：后台定时抓取订阅源更新
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
-
-> The first registered user automatically becomes the administrator.
-
-<<<<<<< HEAD
 ### Docker
 
 ```bash
 docker compose up -d
 ```
 
-The app will be available at **http://localhost:5321**. Data persists in the `./data` directory.
+应用将在 **http://localhost:5321** 可用。数据持久化在 `./data` 目录。
 
-## Configuration
+## 配置说明
 
-### Environment Variables
+### 环境变量
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DB_PATH` | `rss.db` (next to app.py) | SQLite database file path |
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `DB_PATH` | `rss.db`（app.py 同级目录） | SQLite 数据库文件路径 |
 
-### Admin Settings
+### 管理员设置
 
-Once logged in as the administrator (first registered user), you can configure:
+以管理员身份登录（第一个注册的用户）后，可配置：
 
-- **Registration** — Toggle open registration on/off
-- **AI Summarization** — Configure API endpoint, key, model, and minimum article length
-- **TTS** — Configure TTS API for article audio generation
+- **开放注册** — 开关新用户注册功能
+- **AI 摘要** — 配置 API 地址、密钥、模型和最小文章字数
+- **TTS** — 配置语音合成 API
 
-### AI Summarization
+### AI 摘要配置
 
-Upstairs Reader supports any OpenAI-compatible API. Tested providers:
+支持任意兼容 OpenAI 的 API。已验证的提供商：
 
 - OpenAI / Azure OpenAI
-- Aliyun Bailian (阿里云百炼)
-- Ollama / local LLMs
-- Any service with a `/chat/completions` endpoint
+- 阿里云百炼
+- Ollama / 本地大模型
+- 任何提供 `/chat/completions` 端点的服务
 
-In Settings → System Admin, set the API URL, key, and model name.
+在 设置 → 系统管理 中填写 API 地址、密钥和模型名称。
 
-### TTS (Text-to-Speech)
+### TTS 语音合成
 
-Currently supports MiMo TTS and compatible APIs. Configure in Settings → System Admin. Audio files are cached in `audio_cache/`.
+目前支持 MiMo TTS 及兼容接口。在 设置 → 系统管理 中配置。音频文件缓存于 `audio_cache/`。
 
-## API Reference
+## API 参考
 
-### Feeds
+### 订阅源
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/feeds` | List all feeds with item counts |
-| `POST` | `/api/feeds` | Add a feed (`{url}`, optional `group_id`) |
-| `PUT` | `/api/feeds/<id>` | Update feed title or group |
-| `DELETE` | `/api/feeds/<id>` | Delete a feed and its items |
-| `POST` | `/api/feeds/<id>/refresh` | Refresh a single feed |
-| `PUT` | `/api/feeds/<id>/read-all` | Mark all items in feed as read |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/feeds` | 列出所有订阅源及文章数量 |
+| `POST` | `/api/feeds` | 添加订阅源（`{url}`，可选 `group_id`） |
+| `PUT` | `/api/feeds/<id>` | 更新订阅源标题或分组 |
+| `DELETE` | `/api/feeds/<id>` | 删除订阅源及其文章 |
+| `POST` | `/api/feeds/<id>/refresh` | 刷新单个订阅源 |
+| `PUT` | `/api/feeds/<id>/read-all` | 标记该订阅源全部已读 |
 
-### Items
+### 文章
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/items` | List items (`feed_id`, `group_id`, `q`, `unread`, `limit`, `offset`) |
-| `GET` | `/api/items/<id>` | Get a single item |
-| `PUT` | `/api/items/<id>/read` | Mark read/unread (`{is_read}`) |
-| `PUT` | `/api/items/<id>/star` | Toggle star (`{is_starred}`) — triggers AI+TTS on star |
-| `PUT` | `/api/items/<id>/note` | Set a note (`{note}`) |
-| `GET` | `/api/items/starred` | List starred items |
-| `GET` | `/api/items/notes` | List items with notes |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/items` | 文章列表（支持 `feed_id`、`group_id`、`q`、`unread`、`limit`、`offset`） |
+| `GET` | `/api/items/<id>` | 获取单篇文章详情 |
+| `PUT` | `/api/items/<id>/read` | 标记已读/未读（`{is_read}`） |
+| `PUT` | `/api/items/<id>/star` | 收藏/取消收藏（`{is_starred}`）— 收藏时自动触发 AI 摘要和 TTS |
+| `PUT` | `/api/items/<id>/note` | 设置笔记（`{note}`） |
+| `GET` | `/api/items/starred` | 获取收藏列表 |
+| `GET` | `/api/items/notes` | 获取有笔记的文章列表 |
 
-### Groups
+### 分组
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/groups` | List groups |
-| `POST` | `/api/groups` | Create group (`{name}`) |
-| `PUT` | `/api/groups/<id>` | Rename group |
-| `DELETE` | `/api/groups/<id>` | Delete group |
-| `PUT` | `/api/groups/<id>/feeds` | Assign feeds to group |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/groups` | 列出所有分组 |
+| `POST` | `/api/groups` | 创建分组（`{name}`） |
+| `PUT` | `/api/groups/<id>` | 重命名分组 |
+| `DELETE` | `/api/groups/<id>` | 删除分组 |
+| `PUT` | `/api/groups/<id>/feeds` | 批量设置订阅源归属 |
 
-### Auth
+### 认证
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/auth/register` | Register (`{username, password}`) |
-| `POST` | `/api/auth/login` | Login (`{username, password}`) → returns `api_key` |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/auth/register` | 注册（`{username, password}`） |
+| `POST` | `/api/auth/login` | 登录（`{username, password}`）→ 返回 `api_key` |
 
-### AI & Stats
+### AI 与统计
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/ai/summarize/<id>` | Generate AI summary for an article |
-| `GET` | `/api/stats` | Feed/item/unread/starred counts |
-| `GET` | `/api/settings/ai` | Get AI settings (admin) |
-| `PUT` | `/api/settings/ai` | Update AI settings (admin) |
-| `GET` | `/api/settings/registration` | Check registration status |
-| `PUT` | `/api/settings/registration` | Toggle registration (admin) |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/ai/summarize/<id>` | 生成文章 AI 摘要 |
+| `GET` | `/api/stats` | 订阅/文章/未读/收藏数量统计 |
+| `GET` | `/api/settings/ai` | 获取 AI 设置（管理员） |
+| `PUT` | `/api/settings/ai` | 更新 AI 设置（管理员） |
+| `GET` | `/api/settings/registration` | 查看注册开放状态 |
+| `PUT` | `/api/settings/registration` | 开关注册（管理员） |
 
-### Fever API (RSS Client Integration)
+### Fever API（RSS 客户端集成）
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET`/`POST` | `/api/fever` | Fever-compatible endpoint for RSS clients |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET`/`POST` | `/api/fever` | Fever 兼容端点，供 RSS 客户端对接 |
 
-### User Profiles
+### 用户资料
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/user/<username>/profile` | Public profile with starred items & notes |
-| `PUT` | `/api/user/profile` | Update display name & avatar |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/user/<username>/profile` | 公开资料（收藏 + 笔记） |
+| `PUT` | `/api/user/profile` | 更新显示名和头像 |
 
-## Database Schema
+## 数据库结构
 
 ```sql
 feeds(id, url, title, description, icon_url, site_url, custom_title, group_id, added_at, updated_at)
@@ -190,188 +173,65 @@ article_summaries(item_id, summary, created_at, audio_status, audio_path)
 site_settings(key, value)
 ```
 
-## Project Structure
+## 项目结构
 
 ```
 upstairs-reader/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── Dockerfile            # Docker build
-├── docker-compose.yml    # Docker Compose config
+├── app.py                 # 主 Flask 应用
+├── requirements.txt       # Python 依赖
+├── Dockerfile            # Docker 构建文件
+├── docker-compose.yml    # Docker Compose 配置
 ├── static/
-│   ├── index.css         # Stylesheet (dark/light themes)
-│   ├── favicon.ico       # Favicon
-│   ├── logo.png          # App logo
-│   └── avatars/          # User avatar uploads
+│   ├── index.css         # 样式表（深色/浅色主题）
+│   ├── favicon.ico       # 网站图标
+│   ├── logo.png          # 应用 Logo
+│   └── avatars/          # 用户头像上传目录
 ├── templates/
-│   ├── index.html        # Main reader UI
-│   ├── login.html        # Login page
-│   ├── newspaper.html    # Newspaper reading mode
-│   └── people.html       # Public profile page
-├── data/                 # Persistent data (Docker volume)
-└── audio_cache/          # TTS audio cache
+│   ├── index.html        # 主阅读器界面
+│   ├── login.html        # 登录页面
+│   ├── newspaper.html    # 报纸阅读模式
+│   └── people.html       # 个人主页
+├── data/                 # 持久化数据（Docker 卷挂载）
+└── audio_cache/          # TTS 音频缓存
 ```
 
-## Deployment
+## 部署方案
 
-### On a VPS
+### VPS 部署
 
 ```bash
-# Clone and start
+# 克隆并启动
 git clone https://github.com/your-username/upstairs-reader.git
 cd upstairs-reader
 docker compose up -d
 
-# Use nginx/Caddy as reverse proxy
-# Point your domain to localhost:5321
+# 使用 nginx/Caddy 做反向代理
+# 将域名指向 localhost:5321
 ```
 
-### On Synology NAS
+### 群晖 NAS 部署
 
 ```bash
-# Install Python 3, then:
+# 安装 Python 3，然后执行：
 pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 python app.py
 ```
 
-## Contributing
+## 参与贡献
 
-Contributions are welcome! Feel free to open issues or pull requests.
+欢迎提交 Issue 和 Pull Request！
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+1. Fork 本仓库
+2. 创建功能分支
+3. 提交你的修改
+4. 发起 Pull Request
 
-## License
+## 许可证
 
-MIT License — see [LICENSE](LICENSE) file for details.
+MIT License — 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
 <p align="center">
-  Built with ❤️ for people who love reading.
+  为热爱阅读的人而建 ❤️
 </p>
-=======
-- 后端：Python + Flask + SQLite
-- 前端：原生 JavaScript + CSS
-- 部署：Docker / Docker Compose
-
-## 安装部署
-
-### 方式一：Docker Compose（推荐）
-
-```bash
-git clone <仓库地址>
-cd upstairs-rss
-docker-compose up -d
-```
-
-服务将在 http://localhost:5321 启动。
-
-### 方式二：手动运行
-
-```bash
-# 安装依赖
-pip install -r requirements.txt
-
-# 启动服务
-python app.py
-```
-
-默认监听 5321 端口。首次启动会自动创建数据库。
-
-### 方式三：群晖 NAS
-
-```bash
-# 如果 SSL 证书报错，使用阿里云镜像
-pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
-
-python app.py
-```
-
-## 初始配置
-
-1. 访问 http://localhost:5321
-2. 使用默认管理员账号登录：
-   - 用户名：`zhengtu`
-   - 密码：（首次启动时控制台会显示或需在数据库中预设）
-3. 在「设置」→「安全设置」中可开启开放注册
-4. 在「设置」→「AI 设置」中配置 API 密钥（可选）
-
-## AI 摘要功能
-
-支持以下服务商：
-- 阿里云（DashScope）
-- 腾讯云
-- 火山引擎
-- 硅基流动
-- 七牛云
-- 自定义 OpenAI 兼容接口
-
-**注意**：AI 摘要为可选功能，不配置不影响 RSS 基础功能使用。
-
-## 数据存储
-
-- 数据库：`rss.db`（SQLite）
-- 头像：`static/avatars/`
-- 建议定期备份 `rss.db` 文件
-
-## 常见问题
-
-**Q: 如何修改端口号？**
-
-修改 `app.py` 底部：
-```python
-app.run(host="0.0.0.0", port=5321, debug=False)
-```
-
-**Q: 数据库损坏怎么办？**
-
-使用 SQLite 恢复：
-```bash
-sqlite3 rss.db ".dump" > backup.sql
-# 重建数据库
-sqlite3 rss_new.db < backup.sql
-```
-
-**Q: 如何备份数据？**
-
-直接复制 `rss.db` 文件即可，SQLite 是单文件数据库。
-
-**Q: AI 摘要显示"字数不足"？**
-
-在 AI 设置中调整「字数阈值」，设为 0 可对所有文章启用摘要。
-
-**Q: 如何切换繁简界面？**
-
-在「设置」→「偏好设置」中选择界面语言。
-
-## 目录结构
-
-```
-upstairs-rss/
-├── app.py              # 主程序
-├── rss.db              # SQLite 数据库
-├── requirements.txt    # Python 依赖
-├── Dockerfile          # Docker 构建
-├── docker-compose.yml  # Docker Compose 配置
-├── templates/          # HTML 模板
-│   └── index.html
-└── static/             # 静态资源
-    ├── index.css
-    ├── favicon.ico
-    ├── logo.png
-    └── avatars/        # 用户头像
-```
-
-## 开发说明
-
-- 数据库迁移：修改 `init_db()` 函数，会自动执行 ALTER TABLE
-- 前端缓存：开发时 CSS/JS 可能缓存，已配置 no-cache 头，或手动加版本号 `?v=xxx`
-- API 文档：查看 `app.py` 中 `/api/` 开头的路由
-
-## License
-
-MIT
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6

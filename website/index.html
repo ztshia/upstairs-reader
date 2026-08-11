@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Upstairs Reader — Self-hosted RSS, reimagined</title>
-<meta name="description" content="A self-hosted, multi-user RSS reader with AI summarization, TTS narration, and newspaper-style reading. Deploy anywhere with Docker.">
+<title>上楼阅读器 Upstairs Reader — 自托管的 RSS 阅读器，重新定义阅读体验</title>
+<meta name="description" content="上楼阅读器是一款自托管、多用户的 RSS 阅读器，支持 AI 智能摘要、TTS 语音朗读和报纸式阅读。通过 Docker 一键部署，数据完全由你掌控。">
 <style>
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; font-size: 16px; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #0d0d0d;
-  color: #d4d4d4;
-  line-height: 1.7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: #0a0a0a;
+  color: #c8c8c8;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 a { color: inherit; text-decoration: none; }
@@ -24,28 +25,29 @@ img { max-width: 100%; display: block; }
 body::after {
   content: "";
   position: fixed; inset: 0;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   pointer-events: none; z-index: 9999;
 }
 
 /* ── Typography ──────────────────────────────────────────── */
-h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
-h1 { font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1.15; }
-h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.01em; }
+h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.6rem, 5.5vw, 4.2rem); line-height: 1.15; }
+h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); letter-spacing: -0.01em; }
 h3 { font-size: 1.05rem; }
-p { color: #999; }
+p { color: #888; }
+
 code {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-  font-size: 0.875rem;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.85rem;
   background: rgba(255,255,255,0.04);
-  padding: 0.15em 0.4em;
+  padding: 0.15em 0.45em;
   border-radius: 4px;
-  color: #b8c5c5;
+  color: #a8b8b8;
 }
 
 /* ── Container ────────────────────────────────────────────── */
 .container {
-  max-width: 1100px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -55,272 +57,378 @@ nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: rgba(13,13,13,0.7);
+  background: rgba(10,10,10,0.72);
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .nav-inner {
-  max-width: 1100px; margin: 0 auto; padding: 0 2rem;
+  max-width: 1140px; margin: 0 auto; padding: 0 2rem;
   display: flex; align-items: center; justify-content: space-between;
-  height: 3.5rem;
+  height: 3.6rem;
 }
-.nav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: #e0e0e0; }
-.nav-links { display: flex; gap: 2rem; list-style: none; }
-.nav-links a { font-size: 0.85rem; color: #888; transition: color 0.2s; letter-spacing: 0.01em; }
-.nav-links a:hover { color: #c8d8d8; }
+.nav-logo {
+  font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em;
+  color: #d8d8d8;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.nav-logo .zh { color: #9baeae; font-size: 0.9rem; font-weight: 500; }
+.nav-links { display: flex; gap: 1.8rem; list-style: none; align-items: center; }
+.nav-links a { font-size: 0.85rem; color: #777; transition: color 0.2s; }
+.nav-links a:hover { color: #b0c0c0; }
 .nav-cta {
-  background: rgba(107,142,142,0.15);
-  border: 1px solid rgba(107,142,142,0.3);
-  color: #b8c5c5 !important;
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
+  background: rgba(107,142,142,0.12);
+  border: 1px solid rgba(107,142,142,0.28);
+  color: #a8b8b8 !important;
+  padding: 0.4rem 1.1rem;
+  border-radius: 7px;
   font-size: 0.82rem !important;
-  transition: all 0.2s;
+  font-weight: 500;
+  transition: all 0.25s;
 }
 .nav-cta:hover {
-  background: rgba(107,142,142,0.25);
-  border-color: rgba(107,142,142,0.5);
+  background: rgba(107,142,142,0.22);
+  border-color: rgba(107,142,142,0.45);
+  color: #c8d8d8 !important;
 }
 
 /* ── Sections ────────────────────────────────────────────── */
-section { padding: 6rem 0; position: relative; }
+section { padding: 7rem 0; position: relative; }
 
 /* ── Hero ────────────────────────────────────────────────── */
 .hero {
-  padding: 10rem 0 8rem;
+  padding: 11rem 0 9rem;
   text-align: center;
   position: relative;
 }
 .hero::before {
   content: "";
   position: absolute;
-  top: -200px; left: 50%; transform: translateX(-50%);
-  width: 700px; height: 700px;
-  background: radial-gradient(circle at center, rgba(107,142,142,0.08) 0%, transparent 70%);
+  top: -250px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 800px;
+  background: radial-gradient(circle at center, rgba(107,142,142,0.07) 0%, transparent 70%);
   pointer-events: none;
 }
-.hero h1 { color: #f0f0f0; margin-bottom: 1rem; }
-.hero h1 span { color: #8aaaaa; }
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: -100px; left: 50%; transform: translateX(-50%);
+  width: 500px; height: 300px;
+  background: radial-gradient(ellipse at center, rgba(107,142,142,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero h1 { color: #ececec; margin-bottom: 1.2rem; }
+.hero h1 .accent { color: #8aaaaa; }
+.hero h1 .sub {
+  display: block;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 400;
+  color: #6a7a7a;
+  margin-top: 0.5rem;
+  letter-spacing: 0.06em;
+}
 .hero .tagline {
-  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
-  color: #777; max-width: 600px;
-  margin: 0 auto 2.5rem;
-  line-height: 1.6;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: #6a6a6a; max-width: 640px;
+  margin: 0 auto 2.8rem;
+  line-height: 1.7;
+}
+.hero .tagline .en {
+  display: block;
+  font-size: 0.88rem;
+  color: #555;
+  margin-top: 0.4rem;
+  font-style: italic;
 }
 .hero-actions {
   display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
 }
 .btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.7rem 1.6rem;
+  padding: 0.75rem 1.8rem;
   border-radius: 8px;
-  font-size: 0.9rem; font-weight: 500;
-  transition: all 0.2s;
+  font-size: 0.92rem; font-weight: 500;
+  transition: all 0.25s;
   cursor: pointer;
   border: none;
+  letter-spacing: 0.02em;
 }
 .btn-primary {
-  background: rgba(107,142,142,0.2);
-  border: 1px solid rgba(107,142,142,0.4);
-  color: #c0d0d0;
+  background: rgba(107,142,142,0.18);
+  border: 1px solid rgba(107,142,142,0.38);
+  color: #bccccc;
 }
 .btn-primary:hover {
-  background: rgba(107,142,142,0.3);
-  border-color: rgba(107,142,142,0.6);
+  background: rgba(107,142,142,0.28);
+  border-color: rgba(107,142,142,0.55);
+  color: #d0e0e0;
+  transform: translateY(-1px);
 }
 .btn-secondary {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.08);
-  color: #888;
+  color: #808080;
 }
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.07);
   border-color: rgba(255,255,255,0.14);
-  color: #aaa;
+  color: #a0a0a0;
+  transform: translateY(-1px);
 }
 
 /* ── Divider ─────────────────────────────────────────────── */
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.12), transparent);
   max-width: 800px; margin: 0 auto;
 }
 
 /* ── Section Header ──────────────────────────────────────── */
-.section-header { text-align: center; margin-bottom: 4rem; }
-.section-header h2 { color: #e0e0e0; margin-bottom: 0.6rem; }
-.section-header p { font-size: 1.05rem; max-width: 520px; margin: 0 auto; }
+.section-header { text-align: center; margin-bottom: 5rem; }
+.section-header h2 { color: #dcdcdc; margin-bottom: 0.7rem; }
+.section-header .subtitle { font-size: 1.02rem; max-width: 560px; margin: 0 auto; }
+.section-header .subtitle .en {
+  display: block;
+  font-size: 0.82rem;
+  color: #555;
+  margin-top: 0.35rem;
+}
+
+/* ── Badge ───────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgba(107,142,142,0.25);
+  border-radius: 50px;
+  font-size: 0.78rem;
+  color: #8aaaaa;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.04em;
+  background: rgba(107,142,142,0.06);
+}
 
 /* ── Features Grid ───────────────────────────────────────── */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1.4rem;
 }
 .feature-card {
-  background: rgba(255,255,255,0.015);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px;
+  background: rgba(255,255,255,0.012);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
   padding: 2rem 1.6rem;
-  transition: all 0.3s;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
   overflow: hidden;
 }
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.feature-card:hover::before { opacity: 1; }
 .feature-card:hover {
-  border-color: rgba(107,142,142,0.2);
-  background: rgba(107,142,142,0.03);
-  transform: translateY(-2px);
+  border-color: rgba(107,142,142,0.18);
+  background: rgba(107,142,142,0.025);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 .feature-icon {
-  font-size: 1.6rem; margin-bottom: 1rem;
-  width: 44px; height: 44px;
+  font-size: 1.7rem; margin-bottom: 1.2rem;
+  width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(107,142,142,0.08);
-  border-radius: 10px;
+  background: rgba(107,142,142,0.06);
+  border: 1px solid rgba(107,142,142,0.1);
+  border-radius: 12px;
+  transition: all 0.35s;
 }
-.feature-card h3 { color: #ccc; margin-bottom: 0.5rem; font-size: 1rem; }
-.feature-card p { font-size: 0.875rem; line-height: 1.65; }
+.feature-card:hover .feature-icon {
+  background: rgba(107,142,142,0.12);
+  border-color: rgba(107,142,142,0.25);
+}
+.feature-card h3 { color: #c8c8c8; margin-bottom: 0.4rem; font-size: 1.02rem; }
+.feature-card h3 .en { color: #5a6a6a; font-size: 0.75rem; font-weight: 400; display: block; margin-top: 0.15rem; }
+.feature-card p { font-size: 0.875rem; line-height: 1.7; }
 
 /* ── Tech Stack ──────────────────────────────────────────── */
 .tech-strip {
-  display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;
-  margin-top: 2rem;
+  display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center;
+  margin-top: 1.5rem;
 }
 .tech-tag {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  color: #999;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 0.55rem 1.1rem;
+  border-radius: 7px;
+  font-size: 0.84rem;
+  color: #8a8a8a;
   letter-spacing: 0.02em;
-  transition: all 0.2s;
+  transition: all 0.25s;
 }
 .tech-tag:hover {
-  border-color: rgba(107,142,142,0.25);
-  color: #bbb;
+  border-color: rgba(107,142,142,0.22);
+  color: #b0b0b0;
+  background: rgba(107,142,142,0.04);
 }
 
 /* ── Quick Start ─────────────────────────────────────────── */
 .quickstart-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
 }
 .code-block {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 1.6rem;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 1.8rem;
   position: relative;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .code-block h3 {
-  font-size: 0.9rem; color: #999; margin-bottom: 1rem;
-  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 0.88rem; color: #8a8a8a; margin-bottom: 1.2rem;
+  letter-spacing: 0.06em;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.code-block h3 .badge-sm {
+  font-size: 0.7rem;
+  background: rgba(107,142,142,0.12);
+  border: 1px solid rgba(107,142,142,0.2);
+  padding: 0.2em 0.7em;
+  border-radius: 4px;
+  color: #8aaaaa;
+  font-weight: 500;
 }
 .code-block pre {
   overflow-x: auto;
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-  line-height: 1.8;
-  color: #c0c8c8;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  line-height: 1.9;
+  color: #b0baba;
 }
-.code-block pre .comment { color: #555; }
+.code-block pre .comment { color: #4a4a4a; }
 .code-block pre .cmd { color: #8aaaaa; }
-.code-block a {
-  display: inline-block; margin-top: 1.2rem;
-  font-size: 0.82rem; color: #8aaaaa;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s;
+.code-block pre .str { color: #7a9a7a; }
+.code-block .hint {
+  display: inline-block; margin-top: 1.4rem;
+  font-size: 0.82rem; color: #6a7a7a;
+  transition: color 0.2s;
 }
-.code-block a:hover { border-color: #8aaaaa; }
+.code-block .hint:hover { color: #8aaaaa; }
 
 /* ── Stats ─────────────────────────────────────────────────── */
 .stats-row {
-  display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 3rem; justify-content: center;
   margin-top: 3rem;
 }
 .stat { text-align: center; }
 .stat-num {
-  font-size: 2.4rem; font-weight: 700; color: #c0d0d0;
-  letter-spacing: -0.03em;
+  font-size: 2.6rem; font-weight: 700; color: #bcc8c8;
+  letter-spacing: -0.04em;
 }
-.stat-label { font-size: 0.82rem; color: #666; margin-top: 0.3rem; }
+.stat-label { font-size: 0.84rem; color: #5a5a5a; margin-top: 0.3rem; }
 
 /* ── Footer ──────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid rgba(255,255,255,0.05);
-  padding: 3rem 0 2.5rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 3.5rem 0 2.5rem;
   text-align: center;
+  background: rgba(0,0,0,0.3);
 }
 footer .footer-links {
-  display: flex; gap: 2rem; justify-content: center;
-  list-style: none; margin-bottom: 1.5rem;
+  display: flex; gap: 2.2rem; justify-content: center; flex-wrap: wrap;
+  list-style: none; margin-bottom: 1.8rem;
 }
 footer .footer-links a {
-  font-size: 0.82rem; color: #666;
+  font-size: 0.84rem; color: #5a5a5a;
   transition: color 0.2s;
 }
 footer .footer-links a:hover { color: #8aaaaa; }
-footer .copyright { font-size: 0.8rem; color: #444; }
+footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .nav-links { gap: 1rem; }
-  .nav-links a:not(.nav-cta) { display: none; }
-  section { padding: 4rem 0; }
-  .hero { padding: 7rem 0 5rem; }
+  .nav-links { gap: 0.8rem; }
+  .nav-links li:not(:last-child) { display: none; }
+  section { padding: 4.5rem 0; }
+  .hero { padding: 8rem 0 5rem; }
+  .hero h1 { font-size: clamp(1.8rem, 8vw, 2.6rem); }
   .features-grid { grid-template-columns: 1fr; }
   .quickstart-grid { grid-template-columns: 1fr; }
   .container { padding: 0 1.2rem; }
   .nav-inner { padding: 0 1.2rem; }
+  .stats-row { gap: 1.5rem; }
+  .stat-num { font-size: 2rem; }
 }
 
-/* ── Glass accents ───────────────────────────────────────── */
+/* ── Glass panels ────────────────────────────────────────── */
 .glass-panel {
-  background: rgba(255,255,255,0.02);
+  background: rgba(255,255,255,0.015);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 2rem;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 2rem 1.8rem;
+  transition: all 0.3s;
+}
+.glass-panel:hover {
+  border-color: rgba(107,142,142,0.15);
+  background: rgba(107,142,142,0.02);
 }
 
 /* ── API Table ───────────────────────────────────────────── */
+.api-section-title {
+  color: #777; margin: 2.5rem 0 1.2rem; font-size: 0.85rem;
+  letter-spacing: 0.08em; font-weight: 500;
+}
 .api-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  gap: 0.9rem;
 }
 .api-endpoint {
-  background: rgba(255,255,255,0.015);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
+  background: rgba(255,255,255,0.012);
+  border: 1px solid rgba(255,255,255,0.035);
+  border-radius: 9px;
+  padding: 1.1rem 1.3rem;
   font-size: 0.84rem;
+  transition: all 0.25s;
+}
+.api-endpoint:hover {
+  border-color: rgba(107,142,142,0.15);
+  background: rgba(107,142,142,0.02);
 }
 .api-endpoint .method {
-  font-size: 0.7rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  color: #8aaaaa; margin-bottom: 0.3rem;
+  font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #8aaaaa; margin-bottom: 0.35rem;
 }
 .api-endpoint .path {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
-  font-size: 0.8rem; color: #ccc;
-  margin-bottom: 0.3rem; word-break: break-all;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.8rem; color: #c4c4c4;
+  margin-bottom: 0.35rem; word-break: break-all;
 }
-.api-endpoint .desc { color: #666; font-size: 0.78rem; }
+.api-endpoint .desc { color: #5a5a5a; font-size: 0.78rem; }
 
 /* ── Scroll animation ────────────────────────────────────── */
 .fade-in {
-  opacity: 0; transform: translateY(20px);
+  opacity: 0; transform: translateY(24px);
   animation: fadeUp 0.7s ease-out forwards;
 }
 @keyframes fadeUp {
   to { opacity: 1; transform: translateY(0); }
 }
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.3s; }
+.delay-1 { animation-delay: 0.12s; }
+.delay-2 { animation-delay: 0.24s; }
+.delay-3 { animation-delay: 0.36s; }
+
+/* ── Chinese text optimizations ──────────────────────────── */
+.zh-text { letter-spacing: 0.03em; }
+.cjk-aware { text-spacing: auto; }
 </style>
 </head>
 <body>
@@ -328,13 +436,16 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <!-- ── Navigation ────────────────────────────────────────── -->
 <nav>
   <div class="nav-inner">
-    <a href="#" class="nav-logo">Upstairs Reader</a>
+    <a href="#" class="nav-logo">
+      上楼阅读器 <span class="zh">Upstairs Reader</span>
+    </a>
     <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#stack">Stack</a></li>
-      <li><a href="#quickstart">Quick Start</a></li>
-      <li><a href="#api">API</a></li>
-      <li><a href="#quickstart" class="nav-cta">Deploy →</a></li>
+      <li><a href="#features">核心特性</a></li>
+      <li><a href="#stack">技术栈</a></li>
+      <li><a href="#quickstart">快速开始</a></li>
+      <li><a href="#api">API 参考</a></li>
+      <li><a href="#deploy">部署方案</a></li>
+      <li><a href="#quickstart" class="nav-cta">立即部署 →</a></li>
     </ul>
   </div>
 </nav>
@@ -342,19 +453,22 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <!-- ── Hero ──────────────────────────────────────────────── -->
 <section class="hero">
   <div class="container">
-    <h1 class="fade-in">Your feeds,<br>on your <span>terms</span>.</h1>
-    <p class="tagline fade-in delay-1">
-      A self-hosted, multi-user RSS reader with AI-powered summaries,
-      text-to-speech narration, and a newspaper-style reading experience.
-      Deploy anywhere with Docker.
+    <div class="badge fade-in">v1.0 · 开源 &amp; 自托管</div>
+    <h1 class="fade-in delay-1">
+      上楼阅读器
+      <span class="sub">Upstairs Reader</span>
+    </h1>
+    <p class="tagline fade-in delay-2">
+      你的信息，<span class="accent">你的掌控</span>。
+      <span class="en">Self-hosted RSS reader with AI summaries, TTS narration, and newspaper-style reading.</span>
     </p>
-    <div class="hero-actions fade-in delay-2">
+    <div class="hero-actions fade-in delay-3">
       <a href="#quickstart" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        Quick Start
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        快速开始
       </a>
       <a href="https://github.com" class="btn btn-secondary" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
       </a>
     </div>
@@ -367,72 +481,69 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <section id="features">
   <div class="container">
     <div class="section-header fade-in">
-      <h2>Everything you need in a reader</h2>
-      <p>Built for people who want control over their reading experience — no ads, no tracking, no compromises.</p>
+      <div class="badge">核心特性 Features</div>
+      <h2>一款 RSS 阅读器，应有尽有</h2>
+      <p class="subtitle">
+        为想要完全掌控阅读体验的人而生——无广告、无追踪、无妥协。
+        <span class="en">Built for people who want full control. No ads, no tracking, no compromises.</span>
+      </p>
     </div>
     <div class="features-grid">
       <div class="feature-card fade-in">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <h3>Multi-user Support</h3>
-        <p>Registration, login, and per-user read status. Star articles, write notes, and build your own reading profile. The first user becomes admin.</p>
+        <h3>多用户支持 <span class="en">Multi-user Support</span></h3>
+        <p>支持注册、登录和独立阅读进度。收藏文章、撰写笔记，构建属于你自己的阅读档案。首位注册用户自动成为管理员。</p>
       </div>
       <div class="feature-card fade-in delay-1">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </div>
-        <h3>RSS &amp; Atom Parsing</h3>
-        <p>Add any RSS or Atom feed URL. Automatic periodic refresh every 30 minutes keeps your feeds current without manual intervention.</p>
-      </div>
-      <div class="feature-card fade-in delay-2">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        </div>
-        <h3>Feed Organization</h3>
-        <p>Group feeds into custom categories — Tech, News, Blogs, whatever fits your workflow. Drag, rename, and reorder groups with ease.</p>
-      </div>
-      <div class="feature-card fade-in">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <h3>AI Summarization</h3>
-        <p>One-click article summaries via any OpenAI-compatible API. Works with OpenAI, Azure, Aliyun Bailian, Ollama, or your own local LLM.</p>
-      </div>
-      <div class="feature-card fade-in delay-1">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </div>
-        <h3>TTS Audio Narration</h3>
-        <p>Star an article and Upstairs Reader automatically generates high-quality audio narration via MiMo TTS. Listen to your reading list on the go.</p>
+        <h3>AI 智能摘要 <span class="en">AI Summarization</span></h3>
+        <p>一键生成文章摘要，兼容所有 OpenAI 格式 API。支持 OpenAI、Azure、阿里云百炼、Ollama 或本地大模型。</p>
       </div>
       <div class="feature-card fade-in delay-2">
         <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </div>
+        <h3>语音朗读 <span class="en">TTS Narration</span></h3>
+        <p>收藏一篇文章，上楼阅读器自动通过 MiMo TTS 生成高质量音频。通勤路上、运动时，随时收听你的阅读列表。</p>
+      </div>
+      <div class="feature-card fade-in delay-3">
+        <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </div>
-        <h3>Newspaper View</h3>
-        <p>A curated newspaper-style reading mode with cover images. Flip through your feeds like a morning paper — random, curated, beautiful.</p>
+        <h3>报纸视图 <span class="en">Newspaper View</span></h3>
+        <p>精心设计的报纸式阅读模式，带封面大图。像翻阅晨报一样浏览你的订阅源——随机、精选、赏心悦目。</p>
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
-        <h3>Dark &amp; Light Themes</h3>
-        <p>Glass-morphism UI with automatic system theme detection. Switch between dark and light modes seamlessly — your eyes will thank you.</p>
+        <h3>深色 / 浅色主题 <span class="en">Dark &amp; Light Themes</span></h3>
+        <p>毛玻璃风格界面，自动跟随系统主题。在深色与浅色模式间无缝切换——你的眼睛会感谢你。</p>
       </div>
       <div class="feature-card fade-in delay-1">
         <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
         </div>
-        <h3>Fever API Compatible</h3>
-        <p>Use your favorite RSS client apps that support the Fever API protocol. Read on desktop, tablet, or phone — you choose the interface.</p>
+        <h3>繁简中文切换 <span class="en">zh-Hant ↔ zh-Hans</span></h3>
+        <p>内置繁简中文一键切换。在你偏好的字体下阅读——转换在渲染时完成，不会修改你的原始数据。</p>
       </div>
       <div class="feature-card fade-in delay-2">
         <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        </div>
+        <h3>Fever API 兼容 <span class="en">Fever API</span></h3>
+        <p>使用任何支持 Fever API 协议的 RSS 客户端。桌面、平板、手机——你选择自己喜欢的阅读工具。</p>
+      </div>
+      <div class="feature-card fade-in delay-3">
+        <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
         </div>
-        <h3>Traditional &amp; Simplified Chinese</h3>
-        <p>Built-in zh-Hant ↔ zh-Hans toggle. Read in your preferred script — the conversion happens at render time without modifying your data.</p>
+        <h3>Docker 部署 <span class="en">Docker Deployment</span></h3>
+        <p>一条命令，即刻上线。<code>docker compose up -d</code>，数据持久化在本地，无需任何外部服务依赖。</p>
       </div>
     </div>
   </div>
@@ -444,8 +555,12 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <section id="stack">
   <div class="container">
     <div class="section-header fade-in">
-      <h2>Simple, familiar stack</h2>
-      <p>No complicated build pipelines. No JavaScript fatigue. Just clean, maintainable code.</p>
+      <div class="badge">技术栈 Tech Stack</div>
+      <h2>简单、熟悉、可控</h2>
+      <p class="subtitle">
+        没有复杂的构建流水线，没有前端框架疲劳。干净、可维护的代码，所见即所得。
+        <span class="en">No complicated build pipelines. Clean, maintainable code that just works.</span>
+      </p>
     </div>
     <div class="tech-strip fade-in delay-1">
       <span class="tech-tag">Python 3.10+</span>
@@ -453,8 +568,8 @@ footer .copyright { font-size: 0.8rem; color: #444; }
       <span class="tech-tag">SQLite</span>
       <span class="tech-tag">feedparser</span>
       <span class="tech-tag">OpenAI API</span>
-      <span class="tech-tag">Vanilla JS</span>
-      <span class="tech-tag">CSS Custom Properties</span>
+      <span class="tech-tag">原生 JavaScript</span>
+      <span class="tech-tag">CSS 自定义属性</span>
       <span class="tech-tag">Docker</span>
       <span class="tech-tag">Docker Compose</span>
       <span class="tech-tag">MiMo TTS</span>
@@ -464,15 +579,15 @@ footer .copyright { font-size: 0.8rem; color: #444; }
     <div class="stats-row fade-in delay-2">
       <div class="stat">
         <div class="stat-num">0</div>
-        <div class="stat-label">npm dependencies</div>
+        <div class="stat-label">npm 依赖</div>
       </div>
       <div class="stat">
         <div class="stat-num">1</div>
-        <div class="stat-label">command to deploy</div>
+        <div class="stat-label">条命令部署</div>
       </div>
       <div class="stat">
         <div class="stat-num">&infin;</div>
-        <div class="stat-label">feeds, no limits</div>
+        <div class="stat-label">订阅源，无限制</div>
       </div>
     </div>
   </div>
@@ -484,36 +599,48 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <section id="quickstart">
   <div class="container">
     <div class="section-header fade-in">
-      <h2>Up and running in minutes</h2>
-      <p>One command is all it takes. Data persists locally, zero external services required.</p>
+      <div class="badge">快速开始 Quick Start</div>
+      <h2>几分钟内即可上线</h2>
+      <p class="subtitle">
+        只需一条命令。数据持久化在本地，无需任何外部服务。
+        <span class="en">One command is all it takes. Data stays local — zero external dependencies.</span>
+      </p>
     </div>
     <div class="quickstart-grid fade-in delay-1">
       <div class="code-block">
-        <h3>Local Development</h3>
-<pre><span class="comment"># Clone the repository</span>
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          本地开发
+          <span class="badge-sm">Python</span>
+        </h3>
+<pre><span class="comment"># 克隆仓库</span>
 <span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
 <span class="cmd">cd</span> upstairs-reader
 
-<span class="comment"># Install dependencies</span>
+<span class="comment"># 安装依赖</span>
 <span class="cmd">pip install</span> -r requirements.txt
 
-<span class="comment"># Start the server</span>
+<span class="comment"># 启动服务</span>
 <span class="cmd">python</span> app.py</pre>
-        <a href="#">Open http://localhost:5321 &rarr;</a>
+        <a href="#" class="hint">打开 http://localhost:5321 →</a>
       </div>
       <div class="code-block">
-        <h3>Docker</h3>
-<pre><span class="comment"># Clone and start</span>
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+          Docker 部署
+          <span class="badge-sm">Docker</span>
+        </h3>
+<pre><span class="comment"># 克隆仓库并启动</span>
 <span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
 <span class="cmd">cd</span> upstairs-reader
 
-<span class="comment"># One command</span>
+<span class="comment"># 一条命令上线</span>
 <span class="cmd">docker compose up</span> -d</pre>
-        <a href="#">Open http://localhost:5321 &rarr;</a>
+        <a href="#" class="hint">打开 http://localhost:5321 →</a>
       </div>
     </div>
-    <p style="text-align:center; margin-top:2rem; font-size:0.84rem; color:#555;">
-      The first registered user automatically becomes the administrator and can configure AI, TTS, and registration settings.
+    <p style="text-align:center; margin-top:2.5rem; font-size:0.84rem; color:#4a4a4a;">
+      💡 首位注册用户自动成为管理员，可以配置 AI 接口、TTS 语音和注册策略。
     </p>
   </div>
 </section>
@@ -524,38 +651,42 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <section id="api">
   <div class="container">
     <div class="section-header fade-in">
-      <h2>REST API</h2>
-      <p>Everything the web UI does is available through the API. Integrate, extend, automate.</p>
+      <div class="badge">API 参考 API Reference</div>
+      <h2>REST API，完整开放</h2>
+      <p class="subtitle">
+        Web 界面能做的，API 都能做。集成、扩展、自动化，一切尽在掌握。
+        <span class="en">Everything the web UI does is available through the API. Integrate, extend, automate.</span>
+      </p>
     </div>
 
-    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Feeds</h3>
-    <div class="api-grid">
-      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/feeds</div><div class="desc">List all feeds with item counts</div></div>
-      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/feeds</div><div class="desc">Add a new feed by URL</div></div>
-      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/feeds/:id</div><div class="desc">Update feed title or group</div></div>
-      <div class="api-endpoint"><div class="method">DELETE</div><div class="path">/api/feeds/:id</div><div class="desc">Delete a feed and its items</div></div>
+    <h3 class="api-section-title fade-in">📡 订阅源管理</h3>
+    <div class="api-grid fade-in delay-1">
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/feeds</div><div class="desc">获取所有订阅源及文章数量</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/feeds</div><div class="desc">通过 URL 添加新订阅源</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/feeds/:id</div><div class="desc">更新订阅源标题或分组</div></div>
+      <div class="api-endpoint"><div class="method">DELETE</div><div class="path">/api/feeds/:id</div><div class="desc">删除订阅源及其所有文章</div></div>
     </div>
 
-    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Items</h3>
-    <div class="api-grid">
-      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items</div><div class="desc">List items with filters &amp; pagination</div></div>
-      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items/:id</div><div class="desc">Get a single item</div></div>
-      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/read</div><div class="desc">Mark as read / unread</div></div>
-      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/star</div><div class="desc">Toggle star &mdash; triggers AI+TTS</div></div>
+    <h3 class="api-section-title fade-in delay-1">📄 文章操作</h3>
+    <div class="api-grid fade-in delay-1">
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items</div><div class="desc">获取文章列表，支持筛选与分页</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items/:id</div><div class="desc">获取单篇文章详情</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/read</div><div class="desc">标记已读 / 未读</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/star</div><div class="desc">切换收藏 → 自动触发 AI 摘要 + TTS</div></div>
     </div>
 
-    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Auth &amp; Settings</h3>
-    <div class="api-grid">
-      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/register</div><div class="desc">Create an account</div></div>
-      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/login</div><div class="desc">Login &rarr; returns API key</div></div>
-      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/ai/summarize/:id</div><div class="desc">Generate AI summary</div></div>
-      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/stats</div><div class="desc">Feed / item / unread counts</div></div>
+    <h3 class="api-section-title fade-in delay-2">🔐 认证与设置</h3>
+    <div class="api-grid fade-in delay-2">
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/register</div><div class="desc">创建新账户</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/login</div><div class="desc">登录 → 返回 API 密钥</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/ai/summarize/:id</div><div class="desc">生成 AI 摘要</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/stats</div><div class="desc">获取订阅源 / 文章 / 未读统计</div></div>
     </div>
 
-    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Integration</h3>
-    <div class="api-grid">
-      <div class="api-endpoint"><div class="method">GET / POST</div><div class="path">/api/fever</div><div class="desc">Fever API &mdash; works with RSS clients</div></div>
-      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/user/:username/profile</div><div class="desc">Public profile with stars &amp; notes</div></div>
+    <h3 class="api-section-title fade-in delay-3">🔗 集成接口</h3>
+    <div class="api-grid fade-in delay-3">
+      <div class="api-endpoint"><div class="method">GET / POST</div><div class="path">/api/fever</div><div class="desc">Fever API 端点 → 兼容主流 RSS 客户端</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/user/:username/profile</div><div class="desc">公开个人主页，含收藏与笔记</div></div>
     </div>
   </div>
 </section>
@@ -563,29 +694,33 @@ footer .copyright { font-size: 0.8rem; color: #444; }
 <div class="section-divider"></div>
 
 <!-- ── Deployment ─────────────────────────────────────────── -->
-<section>
+<section id="deploy">
   <div class="container">
     <div class="section-header fade-in">
-      <h2>Deploy anywhere</h2>
-      <p>Run it on a VPS, a home server, or a Synology NAS. Same code, same experience.</p>
+      <div class="badge">部署方案 Deployment</div>
+      <h2>随处部署</h2>
+      <p class="subtitle">
+        VPS、家庭服务器、NAS……同一套代码，一致的体验。
+        <span class="en">VPS, home server, or NAS — same code, same experience.</span>
+      </p>
     </div>
     <div class="features-grid">
       <div class="glass-panel fade-in">
-        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#9729;&#65039; VPS</h3>
+        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">☁️ 云服务器 (VPS)</h3>
         <p style="font-size:0.85rem;">
-          Clone, <code>docker compose up -d</code>, and point your domain to <code>localhost:5321</code> with nginx or Caddy as a reverse proxy. Add HTTPS with Let's Encrypt in one command.
+          克隆仓库，<code>docker compose up -d</code>，用 nginx 或 Caddy 反向代理将域名指向 <code>localhost:5321</code>，再通过 Let's Encrypt 一键配置 HTTPS。
         </p>
       </div>
       <div class="glass-panel fade-in delay-1">
-        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#127968; Home Server</h3>
+        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">🏠 家庭服务器 / 树莓派</h3>
         <p style="font-size:0.85rem;">
-          Runs on anything that can run Python 3.10+ or Docker. Raspberry Pi, old laptop, NAS — if it's on your network, it can serve your feeds.
+          只要设备能运行 Python 3.10+ 或 Docker 即可。旧笔记本、树莓派、迷你主机——只要在你的局域网内，就能为你提供阅读服务。
         </p>
       </div>
       <div class="glass-panel fade-in delay-2">
-        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#128230; Synology NAS</h3>
+        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">📦 NAS（群晖 / 威联通）</h3>
         <p style="font-size:0.85rem;">
-          Install Python 3, pip install the requirements with a mirror for faster downloads, and <code>python app.py</code>. Your data lives on your own hardware.
+          安装 Python 3，使用国内镜像加速 pip 安装依赖，然后 <code>python app.py</code>。数据完全存储在你自己的硬件上，隐私无忧。
         </p>
       </div>
     </div>
@@ -597,12 +732,13 @@ footer .copyright { font-size: 0.8rem; color: #444; }
   <div class="container">
     <ul class="footer-links">
       <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/issues" target="_blank" rel="noopener">Issues</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/README.md" target="_blank" rel="noopener">Documentation</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/LICENSE" target="_blank" rel="noopener">MIT 开源协议</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/issues" target="_blank" rel="noopener">问题反馈</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/README.md" target="_blank" rel="noopener">项目文档</a></li>
     </ul>
     <p class="copyright">
-      Upstairs Reader &copy; 2025. Built for people who love reading. Licensed under MIT.
+      Upstairs Reader · 上楼阅读器 &copy; 2025<br>
+      为热爱阅读的人而建 · MIT 开源协议授权
     </p>
   </div>
 </footer>
