@@ -1,0 +1,41 @@
+<<<<<<< HEAD
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.log
+
+# Audio cache
+audio_cache/*.wav
+audio_cache/*.mp3
+
+# Uploaded avatars
+static/avatars/*
+!static/avatars/.gitkeep
+
+# Test data
+test_*.json
+=======
+rss.db-shm
+rss.db
+rss.db
+rss.db-wal
+rss.db
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6

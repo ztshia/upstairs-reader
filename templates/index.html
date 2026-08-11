@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="階上悦读" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>階上悦读</title>
+  <link rel="stylesheet" href="/static/index.css?v=114" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png" />
+  <link rel="apple-touch-icon" href="/static/logo.png" />
+  <script defer src="https://stats.upstairs.cn/script.js" data-website-id="932c949b-1c97-489f-b5a9-afe09295b6de"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <h2><img src="/static/logo.png" alt="" class="site-logo"> 階上悦读</h2>
+      <button id="plus-btn" title="添加订阅 / 管理分组"><i class="fas fa-plus" style="font-size:13px"></i></button>
+    </div>
+    <div id="feed-list"></div>
+    <div id="sidebar-footer">
+      <div id="user-info" title="个人主页"></div>
+      <button id="settings-btn" title="设置"><i class="fas fa-cog"></i></button>
+      <button id="theme-btn" title="切换主题"><i class="fas fa-moon"></i></button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main id="main">
+    <div id="topbar">
+      <span id="topbar-favicon" style="display:none" onclick="document.getElementById('sidebar').classList.toggle('open')"></span>
+      <button id="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+      <span id="topbar-title" data-i18n="all_articles">全部文章</span>
+      <a href="/newspaper" id="podcast-btn" title="Podcast 模式"><i class="fas fa-podcast"></i></a>
+      <div id="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="search-input" type="text" placeholder="搜索..." />
+      </div>
+      <div id="topbar-center">
+        <button id="refresh-btn" title="刷新"><i class="fas fa-sync-alt"></i></button>
+        <button id="mark-read-btn" title="全部已读"><i class="fas fa-check-double"></i></button>
+      </div>
+      <div id="view-toggle">
+        <button class="view-btn active" data-view="grid" title="卡片"><i class="fas fa-th-large"></i></button>
+        <button class="view-btn" data-view="list" title="列表"><i class="fas fa-list"></i></button>
+      </div>
+
+    </div>
+
+    <div id="pull-hint"><i class="fas fa-arrow-down"></i> 下拉刷新</div>
+    <div id="content" class="view-grid"></div>
+
+    <div id="item-detail">
+      <div id="detail-wrapper">
+        <div id="detail-meta"></div>
+        <div id="detail-title-row">
+          <h1 id="detail-title"></h1>
+          <button id="detail-ai-btn" onclick="showAiSummaryFromDetail()" style="display:none;background:none;border:none;cursor:pointer;font-size:18px;color:var(--primary);border-radius:8px;transition:background .15s;flex-shrink:0" title="AI摘要"><img src="/static/icons/ai.svg" style="width:1em;height:1em;vertical-align:middle"></button>
+        </div>
+        <div id="ai-summary-container" style="display:none"></div>
+        <div id="detail-content"></div>
+      </div>
+
+      <!-- 文章大纲 TOC -->
+      <div id="article-toc">
+        <div class="toc-header">
+          <div class="toc-title" data-i18n="toc">文章导览</div>
+          <button class="toc-hide-btn" data-i18n="hide">隐藏</button>
+        </div>
+        <ul class="toc-list"></ul>
+      </div>
+
+      <!-- ── 右键菜单:文章笔记（放在 article 内，position relative 生效） -->
+      <audio id="tts-audio" style="display:none"></audio>
+      <div id="note-context-menu">
+        <div class="ctx-item" data-action="add-note"><i class="fas fa-pen"></i> <span data-i18n="add_note">添加笔记</span></div>
+      </div>
+    </div>
+
+    <!-- 悬浮磨砂玻璃工具栏 -->
+    <div id="floating-toolbar">
+      <button id="toolbar-star" data-i18n-title="favorite" title="收藏"><i class="far fa-star"></i></button>
+      <button id="toolbar-unread" data-i18n-title="keep_unread" title="保持未读"><i class="far fa-check-circle"></i></button>
+      <button id="toolbar-zhconv" title="繁简转换"><i class="fas fa-language"></i></button>
+      <button id="toolbar-toc" data-i18n-title="show_toc" title="显示大纲" style="display:none"><i class="fas fa-list"></i></button>
+      <button id="toolbar-ai" title="AI摘要" style="display:none"><img src="/static/icons/ai.svg" style="width:1em;height:1em;vertical-align:middle"></button>
+      <button id="toolbar-back" title="返回"><i class="fas fa-times"></i></button>
+      <div class="toolbar-divider"></div>
+      <button id="toolbar-prev" title="上一篇"><i class="fas fa-chevron-left"></i></button>
+      <button id="toolbar-next" title="下一篇"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  </main>
+
+</div>
+
+
+
+<!-- ── 右键菜单:订阅源 ── -->
+<div id="feed-context-menu">
+  <div class="ctx-item" data-action="rename"><i class="fas fa-pen"></i> <span data-i18n="rename">重命名</span></div>
+  <div class="ctx-item" data-action="refresh-icon"><i class="fas fa-sync-alt"></i> <span data-i18n="refresh_icon">刷新图标</span></div>
+  <div class="ctx-item" data-action="detail"><i class="fas fa-info-circle"></i> <span data-i18n="detail">详情</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" data-action="unsubscribe"><i class="fas fa-times"></i> <span data-i18n="unsubscribe">取消订阅</span></div>
+</div>
+
+<!-- note-context-menu moved inside #item-detail -->
+<div class="modal-overlay" id="modal-feed-detail-overlay">
+  <div class="modal-box" style="width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:14px;font-weight:500;color:var(--text)">订阅源详情</span>
+      <button class="modal-close" onclick="closeModal('modal-feed-detail-overlay')" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:4px 8px">&times;</button>
+    </div>
+    <div id="feed-detail-body" style="font-size:13px;line-height:1.8;color:var(--text2);"></div>
+  </div>
+</div>
+
+<!-- ── 笔记弹窗 ── -->
+<div class="modal-overlay" id="modal-note-overlay">
+  <div class="modal-box note-modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:500;color:var(--text)" data-i18n="article_notes">文章笔记</span>
+      <button class="modal-close" onclick="closeModal('modal-note-overlay')" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:4px 8px">&times;</button>
+    </div>
+    <div id="note-selected-text" style="font-size:12px;color:var(--text3);margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:4px;line-height:1.5;display:none"></div>
+    <textarea id="note-input" data-i18n-placeholder="note_placeholder" placeholder="写下你的笔记..." style="width:100%;min-height:120px;resize:vertical;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:14px;color:var(--text);line-height:1.6"></textarea>
+    <div id="note-article-title" style="font-size:12px;color:var(--text3);margin-top:6px;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <div class="modal-actions">
+      <button id="modal-note-cancel" onclick="closeModal('modal-note-overlay')" data-i18n="cancel">取消</button>
+      <button id="modal-note-save" style="background:var(--primary);color:#fff" data-i18n="save_note">保存笔记</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 添加订阅 / 管理分组(合并弹窗) ── -->
+<div class="modal-overlay" id="modal-combined-overlay">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="subscribe" data-i18n="add_subscription">添加订阅</button>
+      <button class="modal-tab" data-tab="groups" data-i18n="manage_groups">管理分组</button>
+      <button class="modal-tab" data-tab="opml" data-i18n="import_export">导入导出</button>
+    </div>
+    <div class="modal-tab-content active" id="tab-subscribe">
+      <label>Feed 地址</label>
+      <input id="modal-url" type="url" placeholder="https://example.com/feed.xml" />
+      <label data-i18n="join_group">加入分组(可选)</label>
+      <select id="modal-group"><option value="" data-i18n="no_group">- 无分组 -</option></select>
+      <div id="modal-error"></div>
+      <div class="modal-actions">
+        <button id="modal-combined-cancel" data-i18n="cancel">取消</button>
+        <button id="modal-feed-confirm" data-i18n="confirm_add">确认添加</button>
+      </div>
+    </div>
+    <div class="modal-tab-content" id="tab-groups">
+      <div class="group-list-container" id="group-list-container"></div>
+      <label data-i18n="new_group">新建分组</label>
+      <input id="new-group-name" type="text" placeholder="输入名称,回车确认" data-i18n-placeholder="new_group_ph" />
+      <div class="modal-actions"><button id="modal-group-close" data-i18n="cancel">关闭</button></div>
+    </div>
+    <div class="modal-tab-content" id="tab-opml">
+      <div class="opml-cards">
+        <div class="opml-card" style="margin-bottom:24px">
+          <div class="opml-card-icon"><i class="fas fa-file-export"></i></div>
+          <div class="opml-card-body">
+            <div class="opml-card-title" data-i18n="export_opml">导出 OPML</div>
+            <div class="opml-card-desc" data-i18n="export_opml_desc">导出所有订阅源与分组为 OPML 文件</div>
+          </div>
+          <button id="opml-export-btn" class="opml-card-btn">
+            <i class="fas fa-download"></i> 导出
+          </button>
+        </div>
+        <div class="opml-card">
+          <div class="opml-card-icon"><i class="fas fa-file-import"></i></div>
+          <div class="opml-card-body">
+            <div class="opml-card-title" data-i18n="import_opml">导入 OPML</div>
+            <div class="opml-card-desc" data-i18n="import_opml_desc">从 OPML 文件批量导入订阅源</div>
+          </div>
+          <button id="opml-import-btn" class="opml-card-btn">
+            <i class="fas fa-upload"></i> 选择
+          </button>
+          <input type="file" id="opml-import-file" accept=".opml,.xml" style="display:none">
+        </div>
+      </div>
+      <div id="opml-result"></div>
+      <div class="modal-actions"><button id="modal-opml-close" data-i18n="cancel">关闭</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 分组编辑弹窗 ── -->
+<div class="modal-overlay" id="modal-group-edit-overlay">
+  <div class="modal-box">
+    <h3 id="group-edit-title" data-i18n="edit_group">编辑分组</h3>
+    <label data-i18n="group_name">分组名称</label>
+    <input id="group-edit-name" type="text" data-i18n-placeholder="group_name_ph" placeholder="分组名称" />
+    <div class="modal-actions">
+      <button id="group-edit-cancel">取消</button>
+      <button id="group-edit-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 登录/注册弹窗 ── -->
+<div class="modal-overlay" id="modal-auth-overlay">
+  <div class="modal-box" style="width:360px">
+    <h3 id="auth-title">登录</h3>
+    <label>用户名</label>
+    <input id="auth-username" type="text" placeholder="用户名" autocomplete="username" />
+    <label>密码</label>
+    <input id="auth-password" type="password" placeholder="密码" autocomplete="current-password" />
+    <div id="auth-error" style="color:var(--danger);font-size:12px;margin-top:-8px;display:none"></div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button id="auth-switch" style="background:transparent;border:none;color:var(--accent);cursor:pointer;font-size:13px">注册新账号</button>
+      <span>
+        <button id="auth-cancel" style="background:var(--surface2);color:var(--text2);margin-right:6px">取消</button>
+        <button id="auth-submit">登录</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ── 设置面板 ── -->
+<div class="modal-overlay" id="modal-settings-overlay">
+  <div class="settings-modal" id="settings-box">
+    <!-- 左侧导航 -->
+    <div class="settings-nav">
+      <div class="settings-nav-user">
+        <div id="settings-avatar-wrap" class="settings-nav-avatar">
+          <span id="settings-avatar-letter"></span>
+          <img id="settings-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" />
+        </div>
+        <div id="settings-nav-name" style="font-size:14px;font-weight:600;margin-top:8px;word-break:break-all;text-align:center"></div>
+      </div>
+      <nav class="settings-nav-list">
+        <button class="settings-nav-item active" data-panel="personal" id="nav-personal">
+          <i class="fas fa-user"></i><span data-i18n="personal_settings">个人设置</span>
+        </button>
+
+        <button class="settings-nav-item" data-panel="security" id="nav-security">
+          <i class="fas fa-shield-alt"></i><span data-i18n="security_settings">安全设置</span>
+        </button>
+        <button class="settings-nav-item" data-panel="preference" id="nav-preference">
+          <i class="fas fa-sliders-h"></i><span data-i18n="preference_settings">偏好设置</span>
+        </button>
+        <button class="settings-nav-item" data-panel="ai" id="nav-ai">
+          <img src="/static/icons/ai.svg" style="width:1em;height:1em;vertical-align:middle"><span data-i18n="ai_settings">AI设置</span>
+        </button>
+      </nav>
+
+    </div>
+    <!-- 右侧内容 -->
+    <div class="settings-content">
+      <!-- 个人设置 -->
+      <div class="settings-panel" id="panel-personal">
+        <!-- 头像上传 -->
+        <div class="settings-section">
+          <label class="settings-label"><i class="fas fa-image"></i> <span data-i18n="avatar">头 像</span></label>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+            <div id="settings-avatar-large" class="settings-avatar-preview">
+              <span id="settings-avatar-large-letter"></span>
+              <img id="settings-avatar-large-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" />
+            </div>
+            <div style="flex:1">
+              <input type="file" id="settings-avatar-file" accept="image/*" style="display:none" />
+              <button id="settings-upload-btn" class="settings-upload-btn"><i class="fas fa-upload"></i> <span data-i18n="upload">上传头像</span></button>
+              <div style="margin-top:8px">
+                <span style="font-size:12px;color:var(--text3)">或</span>
+                <input id="settings-avatar-input" class="settings-input" type="url" placeholder="https://..." style="width:100%;margin-top:4px" data-i18n-placeholder="avatar_url" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 昵称 -->
+        <div class="settings-section">
+          <label class="settings-label"><i class="fas fa-user"></i> <span data-i18n="display_name">昵称</span></label>
+          <input id="settings-displayname" type="text" class="settings-input" style="margin-top:8px" />
+          <div style="font-size:11px;color:var(--text3);margin-top:4px" data-i18n="display_name_hint">留空则使用用户名</div>
+        </div>
+        <!-- 用户名 -->
+        <div class="settings-section">
+          <label class="settings-label"><i class="fas fa-at"></i> <span data-i18n="username_label">用户名</span></label>
+          <input id="settings-username" type="text" class="settings-input" disabled style="margin-top:8px;opacity:0.6" />
+        </div>
+        <div class="settings-actions">
+          <button id="settings-cancel" class="settings-btn-secondary" data-i18n="cancel">取消</button>
+          <button id="settings-save-profile" class="settings-btn-primary" data-i18n="save">保存</button>
+        </div>
+      </div>
+      <!-- 安全设置 -->
+      <div class="settings-panel" id="panel-security" style="display:none">
+        <div class="settings-section">
+          <label class="settings-label"><i class="fas fa-key"></i> <span data-i18n="change_password">修改密码</span></label>
+          <input id="settings-old-pw" type="password" class="settings-input" style="margin-top:8px" data-i18n-placeholder="old_password" placeholder="旧密码" />
+          <input id="settings-new-pw" type="password" class="settings-input" style="margin-top:8px" data-i18n-placeholder="new_password" placeholder="新密码" />
+          <input id="settings-confirm-pw" type="password" class="settings-input" style="margin-top:8px" data-i18n-placeholder="confirm_password" placeholder="确认新密码" />
+          <div id="settings-pw-error" style="color:var(--danger);font-size:12px;margin-top:6px;display:none"></div>
+          <button id="settings-change-pw" class="settings-btn-primary" style="margin-top:12px" data-i18n="update_password">更新密码</button>
+        </div>
+        <div class="settings-section" id="admin-section" style="display:none">
+          <label class="settings-label" style="color:var(--danger)"><i class="fas fa-tools"></i> <span data-i18n="system_admin">系统管理</span></label>
+          <div class="settings-row" style="margin-top:8px">
+            <span class="settings-row-label"><span data-i18n="open_registration_label">开放注册</span></span>
+            <button id="settings-reg-toggle" class="settings-toggle-btn">加载中...</button>
+          </div>
+        </div>
+        <div class="settings-section" style="margin-top:24px">
+          <button id="settings-logout" class="settings-btn-secondary" style="width:100%;padding:12px;font-size:15px;color:#fff;background:var(--danger);border-color:var(--danger);border-radius:8px" data-i18n="logout">注销</button>
+        </div>
+      </div>
+      <!-- 偏好设置 -->
+      <div class="settings-panel" id="panel-preference" style="display:none">
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-row-label"><i class="fas fa-palette"></i> <span data-i18n="theme_label">明暗主题</span></span>
+            <button id="settings-theme-toggle" class="settings-toggle-btn"></button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-row-label"><i class="fas fa-language"></i> <span data-i18n="lang_label">界面语言</span></span>
+            <button id="settings-lang-toggle" class="settings-toggle-btn"></button>
+          </div>
+          <div class="settings-row">
+            <span class="settings-row-label"><i class="fas fa-th-large"></i> <span data-i18n="default_view_label">默认视图</span></span>
+            <button id="settings-view-toggle" class="settings-toggle-btn" onclick="handleViewToggle()"></button>
+          </div>
+        </div>
+      </div>
+      <!-- AI设置 -->
+      <div class="settings-panel" id="panel-ai" style="display:none">
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-row-label"><img src="/static/icons/ai.svg" style="width:1em;height:1em;vertical-align:middle"> <span data-i18n="ai_summary_label">AI总结</span></span>
+            <button id="settings-ai-toggle" class="settings-toggle-btn" onclick="handleAiToggle()">加载中...</button>
+          </div>
+        </div>
+        <div id="ai-settings-panel" style="display:none">
+          <div class="settings-section">
+            <label class="settings-label"><i class="fas fa-link"></i> <span data-i18n="api_url_label">API接口地址</span></label>
+            <div class="provider-select-wrap">
+              <select id="settings-ai-provider">
+                <option value="aliyun" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" data-i18n="provider_aliyun">阿里云</option>
+                <option value="tencent" data-url="https://tokenhub.tencentmaas.com/v1/chat/completions" data-i18n="provider_tencent">腾讯云</option>
+                <option value="volcano" data-url="https://ark.cn-beijing.volces.com/api/v3/responses/chat/completions" data-i18n="provider_volcano">火山引擎</option>
+                <option value="volcano_ark" data-url="https://ark.cn-beijing.volces.com/api/coding/v3/chat/completions" data-i18n="provider_volcano_ark">火山方舟</option>
+                <option value="siliconflow" data-url="https://api.siliconflow.cn/v1/chat/completions" data-i18n="provider_siliconflow">硅基流动</option>
+                <option value="qiniu" data-url="https://api.qnaigc.com/v1/chat/completions" data-i18n="provider_qiniu">七牛云</option>
+                <option value="deepseek" data-url="https://api.deepseek.com/chat/completions" data-i18n="provider_deepseek">DeepSeek</option>
+                <option value="moonshot" data-url="https://api.moonshot.cn/v1/chat/completions" data-i18n="provider_moonshot">月之暗面</option>
+                <option value="zhipu" data-url="https://open.bigmodel.cn/api/paas/v4/chat/completions" data-i18n="provider_zhipu">智谱</option>
+                <option value="stepfun" data-url="https://api.stepfun.com/v1/chat/completions" data-i18n="provider_stepfun">阶跃星辰</option>
+                <option value="sensenova" data-url="https://token.sensenova.cn/v1/chat/completions" data-i18n="provider_sensenova">商汤</option>
+                <option value="minimax" data-url="https://api.minimaxi.com/v1/chat/completions" data-i18n="provider_minimax">MiniMax</option>
+                <option value="custom" data-i18n="provider_custom">自定义</option>
+              </select>
+              <input id="settings-ai-url" type="text" placeholder="https://api.openai.com/v1/chat/completions" data-i18n-placeholder="api_url_ph" readonly />
+            </div>
+          </div>
+          <div class="settings-section">
+            <label class="settings-label"><i class="fas fa-key"></i> <span data-i18n="api_key_label">API Key</span></label>
+            <div class="key-input-wrap">
+              <input id="settings-ai-key" type="password" class="settings-input" placeholder="sk-..." data-i18n-placeholder="api_key_ph" />
+              <button type="button" id="toggle-key-btn" class="key-toggle-btn" onclick="toggleKeyVisibility()" title="显示/隐藏"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <label class="settings-label"><i class="fas fa-cube"></i> <span data-i18n="model_name_label">模型名称</span></label>
+            <input id="settings-ai-model" type="text" class="settings-input" style="margin-top:8px" placeholder="gpt-3.5-turbo" data-i18n-placeholder="model_ph" />
+          </div>
+          <div class="settings-section">
+            <label class="settings-label"><i class="fas fa-text-height"></i> <span data-i18n="min_length_label">字数阈值</span></label>
+            <select id="settings-ai-minlength" class="settings-input" style="margin-top:8px">
+              <option value="0" data-i18n="min_unlimited">不限制</option>
+              <option value="500" data-i18n="min_500">500字</option>
+              <option value="800" data-i18n="min_800">800字</option>
+              <option value="1000" data-i18n="min_1000">1000字</option>
+              <option value="2000" data-i18n="min_2000">2000字</option>
+              <option value="3000" data-i18n="min_3000">3000字</option>
+            </select>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px" data-i18n="min_length_hint">仅对超过此字数的文章显示AI总结按钮</div>
+          </div>
+          <div class="settings-section">
+            <button id="settings-ai-test" class="settings-btn-secondary" style="width:100%" onclick="testAiConnection()"><i class="fas fa-plug"></i> <span data-i18n="test_connection">测试连接</span></button>
+            <div id="ai-test-result" style="font-size:12px;margin-top:8px;display:none"></div>
+          </div>
+          <div class="settings-actions">
+            <button id="settings-ai-cancel" class="settings-btn-secondary" data-i18n="cancel">取消</button>
+            <button id="settings-ai-save" class="settings-btn-primary" data-i18n="save">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ── 全局状态 ── */
+let currentUser = null;
+const state = {
+  feeds: [], groups: [], items: [],
+  activeFeed: null, search: "", page: 0,
+  loading: false, hasMore: true,
+  view: localStorage.getItem("rss_view") || "list",
+  theme: localStorage.getItem("rss_theme") || "light",
+  lang: localStorage.getItem("rss_lang") || "zh-Hans",
+  currentItemIndex: -1,
+  aiSettings: { enabled: false, minLength: 500 }
+};
+
+const API = (p) => `/api${p}`;
+const authFetch = (path, opts = {}) => {
+  const k = localStorage.getItem("rss_api_key");
+  const isFormData = opts.body instanceof FormData;
+  // For FormData, pass API key as query param so Content-Type stays clean
+  if (isFormData && k) path = path + (path.includes('?') ? '&' : '?') + 'k=' + encodeURIComponent(k);
+  return fetch(`/api${path}`, {
+    ...opts,
+    headers: isFormData
+      ? {}   // let browser set Content-Type + boundary automatically
+      : { ...opts.headers || {}, "X-API-Key": k || "" }
+  });
+};
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+function el(tag, cls, inner) { const e = document.createElement(tag); if (cls) e.className = cls; if (inner) e.innerHTML = inner; return e; }
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function timeAgo(d, lang) {
+  if (!d) return "";
+  const t = new Date(d);
+  if (isNaN(t)) return d;
+  const s = (Date.now()-t.getTime())/1000;
+  if (s<60) return lang==="zh-Hans" ? "刚刚" : "剛剛";
+  const m=Math.floor(s/60);
+  if (m<60) return m+(lang==="zh-Hans" ? "分钟前" : "分鐘前");
+  const h=Math.floor(s/3600);
+  if (h<24) return h+(lang==="zh-Hans" ? "小时前" : "小時前");
+  const d2=Math.floor(s/86400);
+  if (d2<30) return d2+(lang==="zh-Hans" ? "天前" : "天前");
+  return t.toLocaleDateString("zh-CN");
+}
+/* 繁简转换 - 调用后端 zhconv API */
+function doZhconv(direction, html, callback) {
+  fetch('/api/translate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: html, direction: direction })
+  })
+  .then(r => r.json())
+  .then(d => callback(d.result || html))
+  .catch(() => callback(html));
+}
+
+function isTraditional(html) {
+  const t = (html.match(/[開關門們間車馬鳥魚書為發頭見隻從眾義與萬當實時進說請這裡後過會還對難農復單幾嗎讓給應該國現動機區場網來長變點認處號題連運遠適選錢錯録雖聽讀賣質贊資路夠樣樂興達遊備園環產療組細終結習慣義總養響員廣庫層盡確顯顧驗體飛傳帶積獲華語詞議證論設許變據線環編標價銀錢錶陽陰陳隨電預餘館風飾驗飲]/g) || []).length;
+  const s = (html.match(/[开关门们间车马鸟鱼书为发头见只从众义与万当实时进说请这里后过会还对难农复单几吗让给应该国现动机区场网来长变点认处号题连运远适选钱错录虽听读写质赞资路够样乐兴达游备园环产疗组细终结习惯义总养响员广库层尽确显顾验体飞传带积获华语词议证书设许变据线环编标价银钱表阳阴陈随电预余馆风饰验饮]/g) || []).length;
+  return t > s;
+}
+function stripHtml(h) { const d = document.createElement("div"); d.innerHTML = h || ""; return d.textContent || ""; }
+
+/**
+ * 渲染 favicon - 双元素方案,无 inline onerror
+ * 优先用 siteUrl(源站),fallback 到 feedUrl 域名
+ * 始终有 favicon(从 siteUrl/feedUrl 域名推导),不再需要 placeholder 图标
+ */
+function faviconHtml(cls, feedUrl, iconUrl, siteUrl) {
+  let src = iconUrl;
+  if (!src) {
+    src = '/static/logo.png'; // 默认使用自定义 logo
+  }
+  return `<span class="favicon-wrap"><img src="${esc(src)}" alt="" loading="lazy"></span>`;
+}
+
+/* 全局:favicon 加载失败时使用默认 logo */
+document.addEventListener("error", e => {
+  if (e.target.tagName === "IMG" && e.target.closest(".favicon-wrap") && !e.target.dataset.failed) {
+    e.target.dataset.failed = "1";
+    e.target.src = '/static/logo.png';
+  }
+}, true);
+
+
+/* ── 主题 dark/light ── */
+function themeIcon(t) {
+  return t === "light" ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+}
+function applyTheme() {
+  const root = document.documentElement;
+  root.classList.remove("light", "dark");
+  root.classList.add(state.theme);
+  $("#theme-btn").innerHTML = themeIcon(state.theme);
+  localStorage.setItem("rss_theme", state.theme);
+  const tb = $("#settings-theme-toggle");
+  if (tb) tb.textContent = t("theme_" + state.theme);
+}
+$("#theme-btn").addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  applyTheme();
+});
+
+/* ── i18n 繁简映射 ── */
+const I18N = {
+  "zh-Hant": {
+    settings: "設置", avatar_url: "頭像 URL", avatar: "頭像", upload: "上傳頭像", avatar_upload_tip: "支援 JPG/PNG/GIF,最大 2MB", display_name: "暱稱",
+    personal_settings: "個人設置", security_settings: "安全設置", preference_settings: "偏好設置",
+    display_name_hint: "留空則使用用戶名", username_label: "用戶名",
+    change_password: "修改密碼", old_password: "舊密碼", new_password: "新密碼",
+    confirm_password: "確認新密碼", update_password: "更新密碼",
+    theme_label: "明暗主題", lang_label: "界面語言",
+    logout: "退出登錄", cancel: "取消", save: "保存",
+    theme_auto: "自動", theme_light: "淺色", theme_dark: "深色",
+    lang_hant: "繁體", lang_hans: "简体", off: "關閉", on: "開啟",
+    join_group: "加入分組(可選)", new_group: "新建分組",
+    username_ph: "用戶名", password_ph: "密碼",
+    fill_fields: "請填寫用戶名和密碼", network_error: "網路錯誤",
+    pull_refresh: "下拉刷新", refresh_icon: "刷新圖標",
+    unsubscribe: "取消訂閱", add_note: "添加筆記",
+    no_results: "沒有找到相關文章", no_articles: "暫無文章",
+    try_other: "試試其他關鍵詞", start_using: "點擊「添加訂閱」開始使用",
+    all_articles: "全部文章", search_ph: "搜索...",
+    confirm_unsubscribe: "確定取消訂閱?", confirm_mark_read: label => `確定將 ${label} 標記為已讀?`,
+    confirm_delete_group: "確定刪除分組?", confirm_logout: "退出登錄?", file_too_large: "文件不能超過 2MB", upload_failed: "上傳失敗", network_error: "網絡錯誤", rename_failed: "重命名失敗", network_error_rename: "網絡錯誤,重命名失敗",
+    keep_unread: "保持未讀", prev_article: "上一篇", next_article: "下一篇",
+    back: "返回", favorite: "收藏", zhconv: "繁簡轉換",
+    feed_url: "訂閱地址", site_url: "源站地址", icon_url: "圖標地址",
+    no_group: "(無分組)", manage_groups: "管理分組", add_subscription: "添加訂閱",
+    group: "所屬分組", no_site: "(無)", unknown_group: "(未知分組)",
+    ungrouped: "(未分組)", pw_too_short: "密碼至少4位",
+    pw_mismatch: "兩次密碼不一致", pw_changed: "密碼已更新",
+    pw_wrong: "舊密碼錯誤", profile_saved: "已保存",
+    no_change: "沒有修改",
+    new_group_ph: "鍵入名稱，回車確認", enter_feed_url: "請鍵入地址",
+    rename: "重命名", refresh_icon: "刷新圖標", detail: "詳情",
+    save_note: "保存筆記", note_placeholder: "寫下你的筆記...", article_notes: "文章筆記", starred: "收藏文章", notes: "文章筆記",
+    feeds_count: n => n + " 個訂閱", default_view_label: "預設視圖", view_list: "列表", view_card: "卡片", system_admin: "系統管理", open_registration_label: "開放注冊", closed: "已關閉", open: "已開放", edit_group: "編輯分組", current_feed: "當前訂閱源",
+    import_export: "導入導出", export_opml: "導出 OPML", export_opml_desc: "導出所有訂閱源與分組為 OPML 文件",
+    import_opml: "導入 OPML", import_opml_desc: "從 OPML 文件批量導入訂閱源",
+    export: "導出", choose_file: "選擇文件", opml_importing: "正在導入...",
+    opml_done: n => `導入完成: 新增 ${n} 個訂閱`, opml_skipped: n => `, ${n} 個已跳過`, opml_error: e => `錯誤: ${e}`,
+    toc: "本文導覽", hide: "隱藏", show_toc: "顯示大綱",
+    ai_settings: "AI設置", ai_summary_label: "AI總結", api_url_label: "API接口地址", api_key_label: "API Key",
+    model_name_label: "模型名稱", min_length_label: "字數閾值", min_unlimited: "不限制", min_500: "500字", min_800: "800字", min_1000: "1000字",
+    min_2000: "2000字", min_3000: "3000字", min_length_hint: "僅對超過此字數的文章顯示AI總結按鈕",
+    test_connection: "測試連接", api_url_ph: "https://api.openai.com/v1/chat/completions",
+    api_key_ph: "sk-...", model_ph: "gpt-3.5-turbo", ai_summary_btn: "AI總結",
+    ai_summarizing: "正在總結...", ai_summary_result: "AI摘要", test_success: "連接成功",
+    test_failed: "連接失敗", ai_save_success: "AI設置已保存", article_too_short: "文章字數不足，無需總結",
+    provider_label: "服務商", provider_aliyun: "阿裏雲", provider_tencent: "騰訊雲", provider_volcano: "火山引擎", provider_volcano_ark: "火山方舟", provider_siliconflow: "矽基流動", provider_qiniu: "七牛雲", provider_deepseek: "DeepSeek", provider_moonshot: "月之暗面", provider_zhipu: "智譜", provider_stepfun: "階躍星辰", provider_sensenova: "商湯", provider_minimax: "MiniMax", provider_custom: "自定義",
+  },
+  "zh-Hans": {
+    settings: "设置", avatar_url: "头像 URL", avatar: "头像", upload: "上传头像", avatar_upload_tip: "支持 JPG/PNG/GIF,最大 2MB", display_name: "昵称",
+    personal_settings: "个人设置", security_settings: "安全设置", preference_settings: "偏好设置",
+    display_name_hint: "留空则使用用户名", username_label: "用户名",
+    change_password: "修改密码", old_password: "旧密码", new_password: "新密码",
+    confirm_password: "确认新密码", update_password: "更新密码",
+    theme_label: "明暗主题", lang_label: "界面语言",
+    logout: "退出登录", cancel: "取消", save: "保存",
+    theme_auto: "自动", theme_light: "浅色", theme_dark: "深色",
+    lang_hant: "繁體", lang_hans: "简体", off: "关闭", on: "开启",
+    group_name: "分组名称", group_name_ph: "分组名称", confirm_add: "确认添加",
+    join_group: "加入分组(可选)", new_group: "新建分组",
+    username_ph: "用户名", password_ph: "密码",
+    fill_fields: "请填写用户名和密码", network_error: "网络错误",
+    pull_refresh: "下拉刷新", refresh_icon: "刷新图标",
+    unsubscribe: "取消订阅", add_note: "添加笔记",
+    no_results: "没有找到相关文章", no_articles: "暂无文章",
+    try_other: "试试其他关键词", start_using: "点击「添加订阅」开始使用",
+    all_articles: "全部文章", search_ph: "搜索...",
+    confirm_unsubscribe: "确定取消订阅?", confirm_mark_read: label => `确定将 ${label} 标记为已读?`,
+    confirm_delete_group: "确定删除分组?", confirm_logout: "退出登录?", file_too_large: "文件不能超过 2MB", upload_failed: "上传失败", network_error: "网络错误", rename_failed: "重命名失败", network_error_rename: "网络错误,重命名失败",
+    keep_unread: "保持未读", prev_article: "上一篇", next_article: "下一篇",
+    back: "返回", favorite: "收藏", zhconv: "繁简转换",
+    feed_url: "订阅地址", site_url: "源站地址", icon_url: "图标地址",
+    no_group: "(无分组)", manage_groups: "管理分组", add_subscription: "添加订阅",
+    group: "所属分组", no_site: "(无)", unknown_group: "(未知分组)",
+    ungrouped: "(未分组)", pw_too_short: "密码至少4位",
+    pw_mismatch: "两次密码不一致", pw_changed: "密码已更新",
+    pw_wrong: "旧密码错误", profile_saved: "已保存",
+    no_change: "没有修改",
+    new_group_ph: "输入名称，回车确认", enter_feed_url: "请输入地址",
+    rename: "重命名", refresh_icon: "刷新图标", detail: "详情",
+    save_note: "保存笔记", note_placeholder: "写下你的笔记...", article_notes: "文章笔记", starred: "收藏文章", notes: "文章笔记",
+    feeds_count: n => n + " 个订阅", default_view_label: "默认视图", view_list: "列表", view_card: "卡片", system_admin: "系统管理", open_registration_label: "开放注册", closed: "已关闭", open: "已开放", edit_group: "编辑分组", current_feed: "当前订阅源",
+    import_export: "导入导出", export_opml: "导出 OPML", export_opml_desc: "导出所有订阅源与分组为 OPML 文件",
+    import_opml: "导入 OPML", import_opml_desc: "从 OPML 文件批量导入订阅源",
+    export: "导出", choose_file: "选择", opml_importing: "正在导入...",
+    opml_done: n => `导入完成: 新增 ${n} 个订阅`, opml_skipped: n => `, ${n} 个已跳过`, opml_error: e => `错误: ${e}`,
+    toc: "本文导览", hide: "隐藏", show_toc: "显示大纲",
+    ai_settings: "AI设置", ai_summary_label: "AI总结", api_url_label: "API接口地址", api_key_label: "API Key",
+    model_name_label: "模型名称", min_length_label: "字数阈值", min_unlimited: "不限制", min_500: "500字", min_800: "800字", min_1000: "1000字",
+    min_2000: "2000字", min_3000: "3000字", min_length_hint: "仅对超过此字数的文章显示AI总结按钮",
+    test_connection: "测试连接", api_url_ph: "https://api.openai.com/v1/chat/completions",
+    api_key_ph: "sk-...", model_ph: "gpt-3.5-turbo", ai_summary_btn: "AI总结",
+    ai_summarizing: "正在总结...", ai_summary_result: "AI摘要", test_success: "连接成功",
+    test_failed: "连接失败", ai_save_success: "AI设置已保存", article_too_short: "文章字数不足，无需总结",
+    provider_label: "服务商", provider_aliyun: "阿里云", provider_tencent: "腾讯云", provider_volcano: "火山引擎", provider_volcano_ark: "火山方舟", provider_siliconflow: "硅基流动", provider_qiniu: "七牛云", provider_deepseek: "DeepSeek", provider_moonshot: "月之暗面", provider_zhipu: "智谱", provider_stepfun: "阶跃星辰", provider_sensenova: "商汤", provider_minimax: "MiniMax", provider_custom: "自定义",
+  }
+};
+
+function t(key, ...args) { const v = (I18N[state.lang] || I18N["zh-Hans"])[key]; if (typeof v === "function") return v(...args); return v || key; }
+
+function applyLang() {
+  localStorage.setItem("rss_lang", state.lang);
+  // data-i18n 元素
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  // data-i18n-placeholder 元素
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  // data-i18n-title 元素
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  // 设置面板内切换按钮文字
+  const tb = $("#settings-theme-toggle");
+  if (tb) tb.textContent = t("theme_" + state.theme);
+  const lb = $("#settings-lang-toggle");
+  if (lb) lb.textContent = state.lang === "zh-Hans" ? t("lang_hans") : t("lang_hant");
+  // 其他散落文本
+  const plusBtn = $("#plus-btn"); if (plusBtn) plusBtn.title = t("add_subscription") + " / " + t("manage_groups");
+  const themeBtn = $("#theme-btn"); if (themeBtn) themeBtn.title = t("theme_label");
+  const searchInput = $("#search-input"); if (searchInput) searchInput.placeholder = t("search_ph");
+}
+
+/* ── 设置面板逻辑 ── */
+async function openSettings(panel) {
+  if (!currentUser) { window.location.href = "/login"; return; }
+  // 填充当前数据
+  const dn = currentUser.displayName || currentUser.username;
+  $("#settings-username").value = currentUser.username;
+  $("#settings-displayname").value = currentUser.displayName || "";
+  $("#settings-avatar-input").value = currentUser.avatar || "";
+  // 导航头像和名字
+  const navName = $("#settings-nav-name"); if (navName) navName.textContent = dn;
+  const navLetter = $("#settings-avatar-letter"); const navImg = $("#settings-avatar-img");
+  const largeLetter = $("#settings-avatar-large-letter"); const largeImg = $("#settings-avatar-large-img");
+  if (currentUser.avatar) {
+    if (navImg) { navImg.src = currentUser.avatar; navImg.style.display = "block"; } if (navLetter) navLetter.style.display = "none";
+    if (largeImg) { largeImg.src = currentUser.avatar; largeImg.style.display = "block"; } if (largeLetter) largeLetter.style.display = "none";
+  } else {
+    if (navImg) navImg.style.display = "none"; if (navLetter) { navLetter.textContent = dn.charAt(0).toUpperCase(); navLetter.style.display = ""; }
+    if (largeImg) largeImg.style.display = "none"; if (largeLetter) { largeLetter.textContent = dn.charAt(0).toUpperCase(); largeLetter.style.display = ""; }
+  }
+  updateAvatarPreview();
+  // 密码字段清空
+  $("#settings-old-pw").value = ""; $("#settings-new-pw").value = ""; $("#settings-confirm-pw").value = "";
+  $("#settings-pw-error").style.display = "none";
+  // 切换按钮
+  const tb = $("#settings-theme-toggle"); if (tb) tb.textContent = t("theme_" + state.theme);
+  const lb = $("#settings-lang-toggle"); if (lb) lb.textContent = state.lang === "zh-Hans" ? t("lang_hans") : t("lang_hant");
+  await applySettingsInit();
+<<<<<<< HEAD
+  // 管理员专属逻辑
+  if (currentUser.is_admin) {
+=======
+  // 管理员(zhengtu)专属逻辑
+  if (currentUser.username === "zhengtu") {
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+    document.getElementById("admin-section").style.display = "block";
+    fetchRegistrationSetting();
+  } else {
+    document.getElementById("admin-section").style.display = "none";
+  }
+  // 切换到指定面板
+  switchSettingsPanel(panel || "personal");
+  openModal("modal-settings-overlay");
+}
+
+/* ── 设置面板切换 ── */
+function switchSettingsPanel(panel) {
+  $$(".settings-nav-item").forEach(n => n.classList.toggle("active", n.dataset.panel === panel));
+  $$(".settings-panel").forEach(p => p.style.display = p.id === "panel-" + panel ? "block" : "none");
+}
+$$(".settings-nav-item").forEach(n => n.addEventListener("click", () => switchSettingsPanel(n.dataset.panel)));
+
+/* ── 头像预览 ── */
+function updateAvatarPreview() {
+  const url = $("#settings-avatar-input").value.trim();
+  // 导航小头像
+  const navImg = $("#settings-avatar-img");
+  const navLetter = $("#settings-avatar-letter");
+  // 大预览头像
+  const largeImg = $("#settings-avatar-large-img");
+  const largeLetter = $("#settings-avatar-large-letter");
+  const ch = (currentUser ? currentUser.displayName || currentUser.username : "U").charAt(0).toUpperCase();
+  if (url) {
+    if (navImg) { navImg.src = url; navImg.style.display = ""; } if (navLetter) navLetter.style.display = "none";
+    if (largeImg) { largeImg.src = url; largeImg.style.display = ""; } if (largeLetter) largeLetter.style.display = "none";
+    const onErr = () => {
+      if (navImg) navImg.style.display = "none"; if (navLetter) { navLetter.textContent = ch; navLetter.style.display = ""; }
+      if (largeImg) largeImg.style.display = "none"; if (largeLetter) { largeLetter.textContent = ch; largeLetter.style.display = ""; }
+    };
+    if (navImg) navImg.onerror = onErr;
+    if (largeImg) largeImg.onerror = onErr;
+  } else {
+    if (navImg) navImg.style.display = "none"; if (navLetter) { navLetter.textContent = ch; navLetter.style.display = ""; }
+    if (largeImg) largeImg.style.display = "none"; if (largeLetter) { largeLetter.textContent = ch; largeLetter.style.display = ""; }
+  }
+}
+
+// 头像输入预览
+document.addEventListener("input", e => { if (e.target.id === "settings-avatar-input") updateAvatarPreview(); });
+
+/* ── 头像文件上传 ── */
+$("#settings-upload-btn").addEventListener("click", () => $("#settings-avatar-file").click());
+$("#settings-avatar-file").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert(t("file_too_large")); return; }
+  const formData = new FormData();
+  formData.append("avatar", file);
+  formData.append("username", currentUser.username);
+  formData.append("api_key", currentUser.apiKey);
+  try {
+    const res = await fetch("/api/user/avatar", { method: "POST", body: formData });
+    const d = await res.json();
+    if (d.ok) {
+      currentUser.avatar = d.avatar;
+      $("#settings-avatar-input").value = d.avatar;
+      updateAvatarPreview();
+    } else { alert(d.error || t("upload_failed")); }
+  } catch(err) { alert(t("network_error")); }
+});
+
+/* ── 头像点击打开设置面板 ── */
+$("#user-info").addEventListener("click", () => {
+  if (!currentUser) { window.location.href = "/login"; return; }
+  window.location.href = "/people/" + currentUser.username;
+});
+
+/* gear btn -> settings */
+$("#settings-btn").addEventListener("click", () => {
+  if (!currentUser) { window.location.href = "/login"; return; }
+  openSettings("personal");
+});
+
+// 主题切换(设置面板内)
+$("#settings-theme-toggle").addEventListener("click", () => { state.theme = state.theme === "dark" ? "light" : "dark"; applyTheme(); applyLang(); });
+
+// 语言切换(设置面板内)
+$("#settings-lang-toggle").addEventListener("click", () => { state.lang = state.lang === "zh-Hant" ? "zh-Hans" : "zh-Hant"; applyLang(); renderFeedList(); updateGroupSelect(); renderItems(); if (state.currentItemIndex != null) showDetail(state.currentItemIndex); refreshAllToggles(); });
+
+function refreshAllToggles() {
+  updateViewToggleBtn();
+  const aiBtn = document.getElementById("settings-ai-toggle");
+  if (aiBtn && aiBtn.dataset.enabled != null) aiBtn.textContent = aiBtn.dataset.enabled === '1' ? t("on") : t("off");
+  const regBtn = $("#settings-reg-toggle");
+  if (regBtn && regBtn.textContent !== "加载中...") { fetch("/api/settings/registration").then(r=>r.json()).then(d=>{ regBtn.textContent = d.allow ? t("open") : t("closed"); }).catch(()=>{}); }
+}
+
+// ── 默认视图 / 开放注册 辅助函数（顶层，随时可调用）──
+function updateViewToggleBtn() {
+  const btn = $("#settings-view-toggle");
+  if (!btn) return;
+  const view = currentUser ? (currentUser.default_view || "list") : "list";
+  const labelKey = view === "list" ? "view_list" : "view_card";
+  btn.textContent = t(labelKey);
+}
+function updateToggleBtn(key, btnId) {
+  const btn = $(btnId);
+  console.log('[DEBUG] updateToggleBtn', key, btnId, 'currentUser?', currentUser, 'value:', currentUser ? currentUser[key] : 'N/A');
+  if (!btn) { console.log('[DEBUG] btn not found'); return; }
+  if (!currentUser) { console.log('[DEBUG] currentUser is null'); return; }
+  console.log('[DEBUG] value:', currentUser[key], '-> text:', currentUser[key] ? t("on") : t("off"));
+  btn.textContent = currentUser[key] ? t("on") : t("off");
+}
+
+// ── 默认视图切换 ──
+async function handleViewToggle() {
+  console.log('[DEBUG] view toggle clicked! currentUser:', !!currentUser, currentUser?.default_view);
+  if (!currentUser) return;
+  const views = ["list", "grid"];
+  const current = currentUser.default_view || "list";
+  const next = views[(views.indexOf(current) + 1) % views.length];
+  try {
+    const res = await authFetch("/user/settings", {
+      method: "PUT", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ username: currentUser.username, api_key: currentUser.apiKey, default_view: next })
+    });
+    const d = await res.json();
+    console.log('[DEBUG] view toggle response:', d);
+    if (d.ok) { currentUser.default_view = next; updateViewToggleBtn(); applyView(next); renderItems(); }
+  } catch(e) { console.error('[DEBUG] view toggle error:', e); }
+}
+
+/* ── 获取与修改系统注册状态 ── */
+async function fetchRegistrationSetting() {
+ const btn = document.getElementById("settings-reg-toggle");
+ if (!btn) return;
+ btn.textContent = "加载中...";
+ try {
+ const res = await authFetch("/settings/registration");
+ const d = await res.json();
+ btn.textContent = d.allow ? t("open") : t("closed");
+ btn.dataset.allow = d.allow;
+ btn.style.color = d.allow ? "var(--primary)" : "var(--text)";
+ } catch(e) {
+ btn.textContent = "加载失败";
+ }
+}
+
+// 注册状态切换按钮事件
+document.addEventListener("DOMContentLoaded", () => {
+ const regToggleBtn = document.getElementById("settings-reg-toggle");
+ if (regToggleBtn) {
+  regToggleBtn.addEventListener("click", async (e) => {
+  const btn = e.target;
+  if (btn.textContent === "加载中..." || btn.textContent === "加载失败" || btn.textContent === "更新中...") return;
+
+  const currentStatus = btn.dataset.allow === "true";
+  btn.textContent = "更新中...";
+
+  try {
+  const res = await authFetch("/settings/registration", {
+   method: "PUT",
+   headers: {"Content-Type": "application/json"},
+   body: JSON.stringify({ allow: !currentStatus })
+  });
+  const d = await res.json();
+  if (d.ok) {
+   btn.textContent = d.allow ? t("open") : t("closed");
+   btn.dataset.allow = d.allow;
+   btn.style.color = d.allow ? "var(--primary)" : "var(--text)";
+  } else {
+   alert(d.error || "状态更新失败");
+   fetchRegistrationSetting(); // 失败回滚文字
+  }
+  } catch(err) {
+  alert("网络错误，更新失败");
+  fetchRegistrationSetting();
+  }
+  });
+ }
+});
+
+// ── AI设置逻辑 ──
+function applyProviderConfig(provider, providersData) {
+  const urlInput = document.getElementById("settings-ai-url");
+  const keyInput = document.getElementById("settings-ai-key");
+  const modelInput = document.getElementById("settings-ai-model");
+  const providerSelect = document.getElementById("settings-ai-provider");
+
+  if (!providerSelect) return;
+
+  if (provider === 'custom') {
+    urlInput.value = '';
+    urlInput.readOnly = false;
+    urlInput.focus();
+    // custom 无预设配置，清空 key/model
+    if (keyInput) keyInput.value = '';
+    if (modelInput) modelInput.value = '';
+  } else {
+    const opt = providerSelect.querySelector(`option[value="${provider}"]`);
+    if (opt && opt.dataset.url) {
+      urlInput.value = opt.dataset.url;
+      urlInput.readOnly = true;
+      urlInput._autoFilled = true;
+    }
+    // 尝试恢复保存的配置
+    const cfg = providersData[provider];
+    if (cfg) {
+      if (keyInput) keyInput.value = cfg.api_key || '';
+      if (modelInput) modelInput.value = cfg.model || '';
+    } else {
+      // 没有保存过，清空
+      if (keyInput) keyInput.value = '';
+      if (modelInput) modelInput.value = '';
+    }
+  }
+}
+
+async function fetchAiSettings() {
+  const btn = document.getElementById("settings-ai-toggle");
+  if (!btn) return;
+  btn.textContent = "加载中...";
+  try {
+    const res = await authFetch("/settings/ai");
+    const d = await res.json();
+    // 更新全局状态
+    state.aiSettings = {
+      enabled: d.ai_enabled === '1',
+      minLength: parseInt(d.ai_min_length) || 500,
+      apiUrl: d.ai_api_url,
+      model: d.ai_model
+    };
+    btn.textContent = d.ai_enabled === '1' ? t("on") : t("off");
+    btn.dataset.enabled = d.ai_enabled;
+    // 填充表单
+    const urlInput = document.getElementById("settings-ai-url");
+    const keyInput = document.getElementById("settings-ai-key");
+    const modelInput = document.getElementById("settings-ai-model");
+    const minLengthSelect = document.getElementById("settings-ai-minlength");
+    if (urlInput) urlInput.value = d.ai_api_url || '';
+    // 加载厂商配置（per-provider 存储）
+    let providersData = {};
+    try { providersData = JSON.parse(d.ai_providers_json || '{}'); } catch(e) {}
+    const savedProvider = d.ai_provider || 'aliyun';
+    window._providersData = providersData;
+
+    // 自动匹配服务商，并控制URL是否可编辑
+    const providerSelect = document.getElementById("settings-ai-provider");
+    if (providerSelect) {
+      providerSelect.value = savedProvider;
+      applyProviderConfig(savedProvider, providersData);
+    }
+
+    // 服务商下拉切换：清空/恢复 key 和 model
+    if (providerSelect) {
+      providerSelect.addEventListener("change", function() {
+        const sel = this.value;
+        applyProviderConfig(sel, window._providersData || {});
+        // 手动改了 URL 时标记
+        urlInput.addEventListener("input", function() { this._autoFilled = false; });
+      });
+    }
+    urlInput.addEventListener("input", function() { this._autoFilled = false; });
+    if (minLengthSelect) minLengthSelect.value = d.ai_min_length || '500';
+    // 显示/隐藏配置面板
+    const panel = document.getElementById("ai-settings-panel");
+    if (panel) panel.style.display = d.ai_enabled === '1' ? 'block' : 'none';
+  } catch(e) {
+    btn.textContent = "加载失败";
+  }
+}
+
+async function handleAiToggle() {
+  const btn = document.getElementById("settings-ai-toggle");
+  if (!btn) return;
+  const currentEnabled = btn.dataset.enabled === '1';
+  const newEnabled = !currentEnabled;
+  btn.textContent = "更新中...";
+  try {
+    const res = await authFetch("/settings/ai", {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ ai_enabled: newEnabled })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      btn.textContent = newEnabled ? t("on") : t("off");
+      btn.dataset.enabled = newEnabled ? '1' : '0';
+      const panel = document.getElementById("ai-settings-panel");
+      if (panel) panel.style.display = newEnabled ? 'block' : 'none';
+    } else {
+      alert(d.error || "更新失败");
+      fetchAiSettings();
+    }
+  } catch(e) {
+    alert("网络错误");
+    fetchAiSettings();
+  }
+}
+
+async function testAiConnection() {
+  const btn = document.getElementById("settings-ai-test");
+  const resultEl = document.getElementById("ai-test-result");
+  if (!btn) return;
+  
+  // 获取当前表单值
+  const url = document.getElementById("settings-ai-url")?.value || '';
+  const key = document.getElementById("settings-ai-key")?.value || '';
+  const model = document.getElementById("settings-ai-model")?.value || '';
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t("test_connection");
+  resultEl.style.display = 'block';
+  resultEl.style.color = 'var(--text2)';
+  resultEl.textContent = '...';
+  
+  try {
+    const res = await authFetch("/settings/ai/test", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ api_url: url, api_key: key, model: model })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      resultEl.style.color = 'var(--primary)';
+      resultEl.textContent = t("test_success");
+    } else {
+      resultEl.style.color = 'var(--danger)';
+      resultEl.textContent = d.error || t("test_failed");
+    }
+  } catch(e) {
+    resultEl.style.color = 'var(--danger)';
+    resultEl.textContent = t("network_error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-plug"></i> ' + t("test_connection");
+  }
+}
+
+function toggleKeyVisibility() {
+  const input = document.getElementById("settings-ai-key");
+  const btn = document.getElementById("toggle-key-btn");
+  if (!input || !btn) return;
+  if (input.type === "password") {
+    input.type = "text";
+    btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    btn.title = "隐藏";
+  } else {
+    input.type = "password";
+    btn.innerHTML = '<i class="fas fa-eye"></i>';
+    btn.title = "显示";
+  }
+}
+
+async function saveAiSettings() {
+  const url = document.getElementById("settings-ai-url")?.value || '';
+  const key = document.getElementById("settings-ai-key")?.value || '';
+  const model = document.getElementById("settings-ai-model")?.value || '';
+  const minLength = document.getElementById("settings-ai-minlength")?.value || '500';
+  const providerSelect = document.getElementById("settings-ai-provider");
+  const provider = providerSelect ? providerSelect.value : 'aliyun';
+  
+  try {
+    const res = await authFetch("/settings/ai", {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        ai_provider: provider,
+        provider_config: {
+          api_url: url,
+          api_key: key,
+          model: model,
+        },
+        ai_api_url: url,
+        ai_api_key: key,
+        ai_model: model,
+        ai_min_length: minLength
+      })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      alert(t("ai_save_success"));
+      closeModal("modal-settings-overlay");
+    } else {
+      alert(d.error || "保存失败");
+    }
+  } catch(e) {
+    alert(t("network_error"));
+  }
+}
+
+// AI设置保存/取消按钮事件
+document.addEventListener("DOMContentLoaded", () => {
+  const saveBtn = document.getElementById("settings-ai-save");
+  const cancelBtn = document.getElementById("settings-ai-cancel");
+  if (saveBtn) saveBtn.addEventListener("click", saveAiSettings);
+  if (cancelBtn) cancelBtn.addEventListener("click", () => closeModal("modal-settings-overlay"));
+});
+
+
+
+// openSettings 中的按钮初始化（打开设置面板时调用）
+async function applySettingsInit() {
+  console.log('[DEBUG] applySettingsInit', currentUser);
+  // 加载注册状态
+  fetchRegistrationSetting();
+  // 加载AI设置
+  fetchAiSettings();
+  updateViewToggleBtn();
+}
+
+// 保存个人设置
+// 保存个人设置
+$("#settings-save-profile").addEventListener("click", async () => {
+  const displayName = $("#settings-displayname").value.trim();
+  const avatar = $("#settings-avatar-input").value.trim();
+  try {
+    const res = await fetch("/api/user/profile", {
+      method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ username: currentUser.username, api_key: currentUser.apiKey, display_name: displayName, avatar })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      currentUser.displayName = d.display_name;
+      currentUser.avatar = d.avatar;
+      currentUser.default_view = d.default_view;
+      currentUser.open_registration = d.open_registration;
+      checkAuth();
+      closeModal("modal-settings-overlay");
+    }
+  } catch(e) {}
+});
+
+// 修改密码
+$("#settings-change-pw").addEventListener("click", async () => {
+  const oldPw = $("#settings-old-pw").value, newPw = $("#settings-new-pw").value, confirmPw = $("#settings-confirm-pw").value;
+  const errEl = $("#settings-pw-error");
+  if (!oldPw || !newPw) { errEl.textContent = t("fill_fields"); errEl.style.display = "block"; return; }
+  if (newPw.length < 4) { errEl.textContent = t("pw_too_short"); errEl.style.display = "block"; return; }
+  if (newPw !== confirmPw) { errEl.textContent = t("pw_mismatch"); errEl.style.display = "block"; return; }
+  try {
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ username: currentUser.username, old_password: oldPw, new_password: newPw })
+    });
+    const d = await res.json();
+    if (d.ok) { localStorage.setItem("rss_api_key", d.api_key); currentUser.apiKey = d.api_key; $("#settings-old-pw").value = ""; $("#settings-new-pw").value = ""; $("#settings-confirm-pw").value = ""; errEl.style.display = "none"; alert(t("pw_changed")); }
+    else { errEl.textContent = t("pw_wrong"); errEl.style.display = "block"; }
+  } catch(e) { errEl.textContent = t("network_error"); errEl.style.display = "block"; }
+});
+
+// 退出(设置面板内)
+$("#settings-logout").addEventListener("click", () => {
+  if (confirm(t("confirm_logout"))) { localStorage.removeItem("rss_api_key"); localStorage.removeItem("rss_username"); currentUser = null; window.location.href = "/login"; }
+});
+
+// 取消
+$("#settings-cancel").addEventListener("click", () => closeModal("modal-settings-overlay"));
+
+/* ── 视图 ── */
+function applyView(v) {
+  if (v !== undefined) state.view = v;
+  $("#content").className = state.view === "list" ? "view-list" : "view-grid";
+  $$(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+  localStorage.setItem("rss_view", state.view);
+}
+$$(".view-btn").forEach(b => b.addEventListener("click", () => { state.view = b.dataset.view; applyView(); renderItems(); }));
+
+/* ── 搜索 ── */
+let searchTimer;
+$("#search-input").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { state.search = $("#search-input").value.trim(); loadItems(true); }, 400); });
+
+/* ── Feed List ── */
+function renderFeedList() {
+  const list = $("#feed-list");
+  const ungrouped = state.feeds.filter(f => !f.group_id);
+  const grouped = {};
+  state.feeds.forEach(f => { if (f.group_id) { if (!grouped[f.group_id]) grouped[f.group_id] = []; grouped[f.group_id].push(f); } });
+  list.innerHTML = "";
+
+  // 全部
+  const all = el("div", "feed-item all-feeds" + (state.activeFeed === null ? " active" : ""));
+  all.innerHTML = `<span class="favicon-wrap"><div class="favicon-placeholder"><i class="fas fa-inbox"></i></div></span><div class="feed-info"><div class="feed-name">${t("all_articles")}</div></div>`;
+  all.addEventListener("click", () => selectFeed(null, t("all_articles")));
+  all.addEventListener("dragover", e => { e.preventDefault(); all.style.background = "var(--surface2)"; });
+  all.addEventListener("dragleave", () => { all.style.background = ""; });
+  all.addEventListener("drop", async e => { e.preventDefault(); all.style.background = ""; const id = parseInt(e.dataTransfer.getData("text/plain")); if (id) await updateFeedGroup(id, null); });
+  list.appendChild(all);
+
+  // 收藏(匿名用户隐藏)
+  const star = el("div", "feed-item starred-feed" + (state.activeFeed === "starred" ? " active" : ""));
+  star.innerHTML = `<span class="favicon-wrap"><div class="favicon-placeholder"><i class="fas fa-star"></i></div></span><div class="feed-info"><div class="feed-name">${t("starred")}</div></div>`;
+  star.addEventListener("click", () => selectFeed("starred", t("starred")));
+  if (currentUser) list.appendChild(star);
+
+  // 笔记(匿名用户隐藏)
+  const notes = el("div", "feed-item notes-feed" + (state.activeFeed === "notes" ? " active" : ""));
+  notes.innerHTML = `<span class="favicon-wrap"><div class="favicon-placeholder"><i class="fas fa-pen"></i></div></span><div class="feed-info"><div class="feed-name">${t("notes")}</div></div>`;
+  notes.addEventListener("click", () => selectFeed("notes", t("notes")));
+  if (currentUser) list.appendChild(notes);
+
+  // 分组
+  state.groups.forEach(g => {
+    const feeds = grouped[g.id] || [];
+    const header = el("div", "group-header");
+    header.dataset.groupId = g.id;
+    header.innerHTML = `<span class="group-arrow"><i class="fas fa-caret-down"></i></span> ${esc(g.name)}`;
+    header.addEventListener("click", () => { header.classList.toggle("collapsed"); header.nextElementSibling.classList.toggle("collapsed"); });
+    header.addEventListener("dragover", e => { e.preventDefault(); header.style.background = "var(--surface2)"; });
+    header.addEventListener("dragleave", () => { header.style.background = ""; });
+    header.addEventListener("drop", async e => { e.preventDefault(); header.style.background = ""; const id = parseInt(e.dataTransfer.getData("text/plain")); if (id) await updateFeedGroup(id, g.id); });
+    const wrap = el("div", "group-feeds");
+    feeds.forEach(f => wrap.appendChild(buildFeedItem(f)));
+    list.appendChild(header);
+    list.appendChild(wrap);
+  });
+
+  ungrouped.forEach(f => list.appendChild(buildFeedItem(f)));
+}
+
+function buildFeedItem(feed) {
+  const unread = feed.item_count - (feed.read_count || 0);
+  const fav = faviconHtml("", feed.url, feed.icon_url, feed.site_url);
+  const item = el("div", "feed-item" + (state.activeFeed === feed.id ? " active" : ""));
+  item.dataset.feedId = feed.id;
+  item.draggable = true;
+  item.innerHTML = `${fav}<div class="feed-name">${esc(feed.title || feed.url)}</div>${unread > 0 ? `<span class="feed-unread">${unread}</span>` : ""}`;
+  item.addEventListener("click", () => selectFeed(feed.id, feed.title || feed.url));
+  item.addEventListener("contextmenu", e => { e.preventDefault(); showFeedContextMenu(e, feed); });
+  item.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", feed.id); item.style.opacity = ".5"; });
+  item.addEventListener("dragend", () => { item.style.opacity = ""; });
+  return item;
+}
+
+/* ── 右键菜单 ── */
+let ctxFeedId, ctxFeedTitle;
+function showFeedContextMenu(e, feed) {
+  ctxFeedId = feed.id; ctxFeedTitle = feed.title || feed.url;
+  const m = $("#feed-context-menu");
+  m.style.display = "block";
+  m.style.left = Math.min(e.clientX, innerWidth - 150) + "px";
+  m.style.top = Math.min(e.clientY, innerHeight - 90) + "px";
+}
+function hideCtx() { $("#feed-context-menu").style.display = "none"; }
+$("#feed-context-menu").addEventListener("click", e => {
+  const ci = e.target.closest(".ctx-item"); if (!ci) return;
+  if (ci.dataset.action === "rename" && ctxFeedId) startRenameFeed(ctxFeedId, ctxFeedTitle);
+  else if (ci.dataset.action === "refresh-icon" && ctxFeedId) refreshFeedIcon(ctxFeedId);
+  else if (ci.dataset.action === "detail" && ctxFeedId) showFeedDetail(ctxFeedId);
+  else if (ci.dataset.action === "unsubscribe" && ctxFeedId && confirm(t("confirm_unsubscribe"))) deleteFeed(ctxFeedId);
+  hideCtx();
+});
+document.addEventListener("click", e => { if (!e.target.closest("#feed-context-menu")) hideCtx(); });
+document.addEventListener("contextmenu", e => {
+  const dc = e.target.closest("#detail-content");
+  if (!dc) return;
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !currentUser) return;
+  e.preventDefault();
+  const rng = sel.getRangeAt(0);
+  const menu = document.getElementById("note-context-menu");
+  const vp = { w: window.innerWidth, h: window.innerHeight };
+  let x = e.clientX;
+  let y = e.clientY;
+  if (x + menu.offsetWidth > vp.w - 8) x = vp.w - menu.offsetWidth - 8;
+  if (y + menu.offsetHeight > vp.h - 8) y = vp.h - menu.offsetHeight - 8;
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+  menu.style.right = "auto";
+  window._noteRange = rng;
+  menu.style.display = "block";
+});
+$("#note-context-menu").addEventListener("click", async e => {
+  const ci = e.target.closest(".ctx-item");
+  if (!ci) return;
+  if (ci.dataset.action === "add-note") {
+    const item = state.items[state.currentItemIndex];
+    if (!item) return;
+    $("#note-article-title").textContent = item.title || "";
+    $("#note-input").value = ""; // 清空输入框,让用户输入新评论
+    const selEl = $("#note-selected-text");
+    if (window._noteRange) {
+      selEl.textContent = "「" + window._noteRange.toString() + "」";
+      selEl.style.display = "";
+    } else {
+      selEl.style.display = "none";
+    }
+    $("#modal-note-overlay").classList.add("visible");
+    $("#note-input").focus();
+  }
+  $("#note-context-menu").style.display = "none";
+});
+document.addEventListener("click", e => { if (!e.target.closest("#note-context-menu")) $("#note-context-menu").style.display = "none"; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#note-context-menu").style.display = "none"; closeModal("modal-note-overlay"); } });
+
+/* 移动端:点击侧边栏外部(遮罩区域)关闭 */
+document.addEventListener("click", e => {
+  const sidebar = $("#sidebar");
+  if (sidebar.classList.contains("open") && !e.target.closest("#sidebar") && !e.target.closest("#menu-btn") && !e.target.closest("#topbar-favicon")) {
+    sidebar.classList.remove("open");
+  }
+});
+
+/* ── 重命名 ── */
+function startRenameFeed(feedId, curTitle) {
+  if (state.activeFeed === feedId) { startEditTopbarTitle(feedId, curTitle); return; }
+  const feedEl = document.querySelector(`.feed-item[data-feed-id="${feedId}"]`);
+  if (!feedEl) return;
+  const nameEl = feedEl.querySelector(".feed-name");
+  const input = document.createElement("input");
+  input.type = "text"; input.value = curTitle;
+  input.style.cssText = "width:100%;background:var(--surface2);border:1px solid var(--text3);border-radius:3px;color:var(--text);font-size:13px;padding:2px 6px;outline:none;";
+  nameEl.replaceWith(input); input.focus(); input.select();
+  const finish = async () => { const v = input.value.trim() || curTitle; if (v !== curTitle) await renameFeed(feedId, v); };
+  input.addEventListener("blur", finish);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); if (e.key === "Escape") { input.value = curTitle; input.blur(); } });
+}
+
+async function renameFeed(feedId, newTitle) {
+  try {
+    const r = await authFetch(`/feeds/${feedId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ title: newTitle }) });
+    if (!r.ok) { alert(t("rename_failed")); return; }
+    await loadFeeds();
+    if (state.activeFeed === feedId) {
+      const f = state.feeds.find(x => x.id === feedId);
+      if (f) updateTopbarTitle(f);
+    }
+  } catch(e) { alert(t("network_error_rename")); }
+}
+
+async function refreshFeedIcon(feedId) {
+  const f = state.feeds.find(x => x.id === feedId); if (!f) return;
+  const feedEl = document.querySelector(`.feed-item[data-feed-id="${feedId}"]`);
+  const iconEl = feedEl ? feedEl.querySelector('.favicon-wrap') : null;
+  if (iconEl) iconEl.classList.add('spinning');
+  const r = await authFetch(`/feeds/${feedId}/refresh`, { method: "POST" });
+  if (r.ok) {
+    const data = await r.json();
+    if (data.icon_url) f.icon_url = data.icon_url;
+    if (data.site_url) f.site_url = data.site_url;
+    renderFeedList();
+    if (state.activeFeed === feedId) updateTopbarTitle(f);
+  }
+  if (iconEl) iconEl.classList.remove('spinning');
+}
+
+function updateTopbarTitle(feedIdOrObj, title) {
+  const el = $("#topbar-favicon");
+  const titleEl = $("#topbar-title");
+  const menuBtn = $("#menu-btn");
+  let feed = null;
+  if (typeof feedIdOrObj === "object") feed = feedIdOrObj;
+  else if (feedIdOrObj && feedIdOrObj !== "starred" && feedIdOrObj !== "notes") feed = state.feeds.find(x => x.id === feedIdOrObj);
+  if (feed) {
+    el.innerHTML = faviconHtml("", feed.url, feed.icon_url, feed.site_url);
+    el.style.display = "";
+    menuBtn.style.display = "none";
+    titleEl.textContent = title || feed.title || t("all_articles");
+  } else {
+    el.innerHTML = "";
+    el.style.display = "none";
+    menuBtn.style.display = "";
+    titleEl.textContent = title || t("all_articles");
+  }
+}
+
+function startEditTopbarTitle(feedId, curTitle) {
+  if (!feedId || feedId === "starred" || feedId === "notes") return;
+  const titleEl = $("#topbar-title");
+  const input = document.createElement("input"); input.id = "topbar-title-input"; input.type = "text"; input.value = curTitle;
+  titleEl.replaceWith(input); input.focus(); input.select();
+  const finish = async () => {
+    const v = input.value.trim() || curTitle;
+    const span = document.createElement("span"); span.id = "topbar-title"; span.textContent = v;
+    input.replaceWith(span);
+    span.addEventListener("dblclick", () => { if (!currentUser) return; const f = state.feeds.find(x => x.id === state.activeFeed); if (f) startEditTopbarTitle(f.id, f.title || f.url); });
+    if (v !== curTitle) await renameFeed(feedId, v);
+  };
+  input.addEventListener("blur", finish);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); if (e.key === "Escape") { input.value = curTitle; input.blur(); } });
+}
+
+$("#topbar-title").addEventListener("dblclick", () => {
+  if (!currentUser) return;
+  if (state.activeFeed && state.activeFeed !== "starred") { const f = state.feeds.find(x => x.id === state.activeFeed); if (f) startEditTopbarTitle(f.id, f.title || f.url); }
+});
+
+/* ── 选中 Feed ── */
+function selectFeed(feedId, title) {
+  state.activeFeed = feedId; state.page = 0;
+  updateTopbarTitle(feedId, title);
+  renderFeedList(); loadItems(true); hideDetail();
+  if (innerWidth < 768) $("#sidebar").classList.remove("open");
+}
+
+async function updateFeedGroup(feedId, groupId) {
+  await authFetch(`/feeds/${feedId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ group_id: groupId }) });
+  await loadFeeds();
+}
+
+/* ── 详情页 ── */
+let detailScrollHandler = null; // 全局滚动监听器引用,用于切换时清理
+
+/* ── AI总结功能 ── */
+async function showAiSummary(idx) {
+  const item = state.items[idx]; if (!item) return;
+  showDetail(idx);
+  await _doAiSummary(item.id);
+}
+
+async function showAiSummaryFromDetail() {
+  if (state.currentItemIndex == null) return;
+  const item = state.items[state.currentItemIndex]; if (!item) return;
+  await _doAiSummary(item.id);
+}
+
+  async function _doAiSummary(itemId) {
+  const summaryContainer = document.getElementById("ai-summary-container");
+  const detailAiBtn = document.getElementById("detail-ai-btn");
+  if (!summaryContainer) return;
+
+  // 字数不足时直接提示，不调用 API
+  const item = state.items.find(x => x.id === itemId);
+  if (item) {
+    const contentLen = (item.content || item.summary || '').length;
+    if (contentLen < (state.aiSettings?.minLength || 500)) {
+      summaryContainer.innerHTML = `<div class="ai-summary-box"><i class="fas fa-info-circle" style="margin-right:6px"></i>${t('article_too_short')}</div>`;
+      summaryContainer.style.display = 'block';
+      return;
+    }
+  }
+
+  // 添加旋转动画
+  if (detailAiBtn) {
+    detailAiBtn.classList.add("ai-icon-animating");
+  }
+
+  summaryContainer.innerHTML = `<div class="ai-summary-loading"><span class="ai-dot-bar"><span></span><span></span><span></span></span> ${t('ai_summarizing')}</div>`;
+  summaryContainer.style.display = 'block';
+  try {
+    const res = await authFetch(`/ai/summarize/${itemId}`, { method: 'POST' });
+    const d = await res.json();
+    if (d.ok) {
+      currentSummaryText = d.summary;
+      summaryContainer.innerHTML = `<div class="ai-summary-box">
+        <div class="ai-summary-box-header">
+          <img src="/static/icons/ai.svg" style="width:1em;height:1em;vertical-align:middle"> ${t('ai_summary_result')}
+          <button id="detail-tts-btn" onclick="playTTS()" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:2px 6px;font-size:13px;color:var(--primary);border-radius:4px;display:inline-flex;align-items:center;gap:4px;" title="播放朗读">
+            <i class="fas fa-volume-up"></i>
+          </button>
+        </div>
+        <div class="ai-summary-box-body">${esc(d.summary)}</div>
+      </div>`;
+      // 生成摘要后显示 TTS 按钮
+      const ttsBtn2 = document.getElementById("detail-tts-btn");
+      if (ttsBtn2) ttsBtn2.style.display = (currentUser && state.aiSettings && state.aiSettings.enabled) ? 'inline-flex' : 'none';
+    } else {
+      summaryContainer.innerHTML = `<div class="ai-summary-box ai-summary-box--err"><i class="fas fa-circle-exclamation"></i> ${esc(d.error || t('test_failed'))}</div>`;
+    }
+  } catch(e) {
+    summaryContainer.innerHTML = `<div class="ai-summary-box ai-summary-box--err"><i class="fas fa-circle-exclamation"></i> ${t('network_error')}</div>`;
+  } finally {
+    // 请求结束移除旋转动画
+    if (detailAiBtn) {
+      detailAiBtn.classList.remove("ai-icon-animating");
+    }
+  }
+}
+
+// ── TTS 语音播放（详情页）────────────────────────────────
+let currentSummaryText = '';
+
+// 详情页TTS音频状态
+let _detailAudio = null;
+let _detailAudioLoading = false;
+
+function _updateTtsBtn(icon) {
+  const btn = document.getElementById('detail-tts-btn');
+  if (!btn) return;
+  if (icon === 'play') btn.innerHTML = '<i class="fas fa-solid fa-play"></i>';
+  else btn.innerHTML = '<i class="fas fa-' + icon + '"></i>';
+}
+
+async function playTTS() {
+  if (!currentSummaryText) return;
+  const item = state.items[state.currentItemIndex];
+  if (!item) return;
+  const itemId = item.id;
+
+  // 如果正在播放或暂停的是当前音频 → 暂停/重新播放
+  if (_detailAudio && _detailAudio._itemId === itemId) {
+    if (_detailAudio.paused) {
+      // 暂停中 → 从当前位置继续播放
+      _detailAudio.play();
+      _updateTtsBtn('pause');
+    } else {
+      // 播放中 → 暂停，显示播放按钮
+      _detailAudio.pause();
+      _updateTtsBtn('play');
+    }
+    return;
+  }
+
+  // 停止之前播放的音频
+  if (_detailAudio) { _detailAudio.pause(); _detailAudio = null; }
+  _updateTtsBtn('volume-up');
+
+  // 第一步：尝试从服务器获取缓存音频
+  try {
+    const audioResp = await fetch('/api/items/' + itemId + '/audio');
+    if (audioResp.ok) {
+      const blob = await audioResp.blob();
+      _playDetailAudio(itemId, blob);
+      return;
+    }
+  } catch(e) { console.warn('Cache check failed:', e); }
+
+  // 第二步：无缓存，触发后台合成
+  if (_detailAudioLoading) return;
+  _detailAudioLoading = true;
+  _updateTtsBtn('spinner fa-spin');
+
+  try {
+    const triggerResp = await fetch('/api/items/' + itemId + '/tts', { method: 'POST', credentials: 'include' });
+    const triggerData = await triggerResp.json();
+    if (!triggerResp.ok) { _updateTtsBtn('volume-up'); alert(triggerData.error || 'TTS触发失败'); return; }
+    if (triggerData.status === 'ready') {
+      // 虽然之前audio接口返回了非ok，但trigger说ready了，再试一次
+      const audioResp2 = await fetch('/api/items/' + itemId + '/audio');
+      if (audioResp2.ok) { const blob = await audioResp2.blob(); _playDetailAudio(itemId, blob); return; }
+    }
+    // 轮询等待音频就绪（最多90秒）
+    for (let i = 0; i < 90; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const audioResp3 = await fetch('/api/items/' + itemId + '/audio');
+        if (audioResp3.ok) {
+          const blob = await audioResp3.blob();
+          _playDetailAudio(itemId, blob);
+          return;
+        }
+      } catch(e) {}
+    }
+    _updateTtsBtn('exclamation-circle');
+    alert('语音合成超时，请稍后重试');
+  } catch(e) {
+    console.error('TTS error:', e);
+    _updateTtsBtn('volume-up');
+    alert('TTS 失败: ' + e.message);
+  } finally {
+    _detailAudioLoading = false;
+  }
+}
+
+function _playDetailAudio(itemId, blob) {
+  if (_detailAudio) { _detailAudio.pause(); }
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio._itemId = itemId;
+  audio.addEventListener('ended', () => { URL.revokeObjectURL(url); _detailAudio = null; _updateTtsBtn('volume-up'); });
+  audio.addEventListener('error', () => { URL.revokeObjectURL(url); _detailAudio = null; _updateTtsBtn('exclamation-circle'); });
+  audio.play();
+  _detailAudio = audio;
+  _updateTtsBtn('pause');
+}
+
+function showDetail(idx) {
+  const item = state.items[idx]; if (!item) return;
+  // 清理之前的滚动监听器
+  if (detailScrollHandler) {
+    $("#item-detail").removeEventListener("scroll", detailScrollHandler);
+    detailScrollHandler = null;
+  }
+  state.currentItemIndex = idx;
+  // 重置 TTS 相关状态，避免残留上一个文章的摘要/TTS
+  currentSummaryText = '';
+  _updateTtsBtn('volume-up');
+  const fav = faviconHtml("", item.feed_url, item.feed_icon, item.feed_site_url);
+  $("#detail-meta").innerHTML = `${fav}<span>${esc(item.feed_title || "")}</span> · <span>${timeAgo(item.created_on_time ? item.created_on_time * 1000 : item.published, state.lang)}</span>`;
+  if (item.link) {
+    $("#detail-title").innerHTML = `<a href="${esc(item.link)}" target="_blank" rel="noopener noreferrer" class="title-link">${esc(item.title || `(${t("no_title")})`)}</a>`;
+  } else {
+    $("#detail-title").textContent = item.title || "(无标题)";
+  }
+  $("#detail-content").innerHTML = item.content || item.summary || "<p>无内容</p>";
+  
+  // ── AI 摘要初始化 ──
+  const aiContainer = document.getElementById("ai-summary-container");
+  if (aiContainer) {
+    aiContainer.style.display = 'none';
+    aiContainer.innerHTML = '';
+  }
+  
+  // 显示/隐藏 AI 按钮根据设置和文章长度
+  const aiBtn = document.getElementById("toolbar-ai");
+  if (aiBtn) {
+    const contentLength = (item.content || item.summary || '').length;
+    const shouldShowAi = currentUser && state.aiSettings.enabled && contentLength >= state.aiSettings.minLength;
+    aiBtn.style.display = shouldShowAi ? '' : 'none';
+  }
+  const detailAiBtn = document.getElementById("detail-ai-btn");
+  if (detailAiBtn) {
+    const contentLength = (item.content || item.summary || '').length;
+    const shouldShowDetailAi = currentUser && state.aiSettings.enabled && contentLength >= state.aiSettings.minLength;
+    // 使用 inline-flex 保障居中对齐
+    detailAiBtn.style.display = shouldShowDetailAi ? 'inline-flex' : 'none';
+  }
+  // TTS 按钮：有 AI 设置且有摘要时才显示
+  const ttsBtn = document.getElementById("detail-tts-btn");
+  if (ttsBtn) {
+    ttsBtn.style.display = (currentUser && state.aiSettings.enabled && currentSummaryText) ? 'inline-flex' : 'none';
+  }
+  
+  
+  generateTOC();
+  $("#toolbar-prev").disabled = (idx <= 0);
+  $("#toolbar-next").disabled = (idx >= state.items.length - 1);
+  $("#item-detail").style.display = "flex";
+  $("#content").style.display = "none";
+
+  const sb = $("#toolbar-star"); sb.innerHTML = item.is_starred ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; sb.classList.toggle("starred", !!item.is_starred); sb.style.display = currentUser ? "" : "none";
+  const rb = $("#toolbar-unread"); rb.innerHTML = item.is_read ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-check-circle"></i>'; rb.style.display = currentUser ? "" : "none";
+
+  // 匿名用户不自动标记已读
+  if (currentUser) {
+    const detailEl = $("#item-detail");
+    if (detailEl.scrollHeight > detailEl.clientHeight + 20) {
+      detailScrollHandler = () => {
+        if (!item.is_read && detailEl.scrollTop + detailEl.clientHeight >= detailEl.scrollHeight * 0.8) {
+          detailEl.removeEventListener("scroll", detailScrollHandler);
+          detailScrollHandler = null;
+          toggleRead(item);
+        }
+      };
+      detailEl.addEventListener("scroll", detailScrollHandler);
+    } else if (!item.is_read) {
+      // 短文章(撑不满一屏):点开即自动标记已读
+      toggleRead(item);
+    }
+  }
+
+  // 不自动标记已读,由用户手动点击未读按钮控制
+  $("#item-detail").scrollTop = 0;
+  $("#floating-toolbar").style.display = "flex";
+  initAudioPlayers();
+
+    // ── 高亮工具 ─────────────────────────────────────────────────
+  // 策略: TreeWalker 建立字符→(node,absOffset)映射 → 在扁平字符空间中搜索 →
+  // 同一文本节点内的匹配用 splitText 包裹，跨节点用 Range.surroundContents
+  function _flatChars(container) {
+    const segs = [];
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.textContent.length) segs.push(node);
+    }
+    const flat = [];
+    for (const n of segs) {
+      for (let i = 0; i < n.textContent.length; i++) {
+        flat.push({ node: n, abs: i });
+      }
+    }
+    return { segs, flat };
+  }
+
+  function _wrapSingleNode(node, so, eo, num, noteText) {
+    try {
+      const left = node.splitText(so);
+      const right = left.splitText(eo - so);
+      const mark = document.createElement("mark");
+      mark.className = "annotation";
+      mark.dataset.note = noteText || "";
+      mark.dataset.index = num;
+      mark.id = "annotation-" + num;
+      const sup = document.createElement("sup");
+      sup.className = "annotation-ref";
+      sup.textContent = "[" + num + "]";
+      mark.appendChild(left);
+      mark.appendChild(sup);
+      right.parentNode.replaceChild(mark, right);
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // 跨节点高亮包裹：保留中间 HTML 结构（<br>、<p> 等），只用 <mark> 包裹首尾文本节点边缘
+  function _wrapByRange(startNode, so, endNode, eo, num, noteText) {
+    const sup = document.createElement("sup");
+    sup.className = "annotation-ref";
+    sup.textContent = "[" + num + "]";
+    function annotate(el) {
+      el.className = "annotation";
+      el.dataset.note = noteText || "";
+      el.dataset.index = num;
+      el.id = "annotation-" + num;
+    }
+    // 同一节点：简单 splitText
+    if (startNode === endNode) {
+      try {
+        return _wrapSingleNode(startNode, so, eo, num, noteText);
+      } catch(e) { return false; }
+    }
+    try {
+      // 跨节点：对首尾文本节点做 splitText，把切出来的部分包在 mark 里
+      const head = startNode.splitText(so);
+      const tail = endNode.splitText(eo);
+      // 收集 head 到 tail 之间的所有节点
+      const r = document.createRange();
+      r.setStartBefore(head);
+      r.setEndAfter(tail.previousSibling || tail);
+      // 用 extractContents 拿到中间所有节点（保留结构）
+      const frag = r.extractContents();
+      // 找到 frag 里第一个和最后一个文本节点，包进 mark
+      const firstTN = _firstText(frag);
+      const lastTN = _lastText(frag);
+      if (firstTN) {
+        const m1 = document.createElement("mark");
+        annotate(m1);
+        firstTN.parentNode.insertBefore(m1, firstTN);
+        m1.appendChild(firstTN);
+        m1.appendChild(sup);
+      }
+      if (lastTN && lastTN !== firstTN) {
+        const m2 = document.createElement("mark");
+        annotate(m2);
+        m2.id = ""; // 避免重复 id
+        lastTN.parentNode.insertBefore(m2, lastTN);
+        m2.appendChild(lastTN);
+      }
+      // 把 frag 插回 DOM
+      r.insertNode(frag);
+      return true;
+    } catch(e) { return false; }
+  }
+  function _firstText(node) {
+    if (node.nodeType === 3 && node.textContent.length) return node;
+    for (const c of node.childNodes) { const f = _firstText(c); if (f) return f; }
+    return null;
+  }
+  function _lastText(node) {
+    if (node.nodeType === 3 && node.textContent.length) return node;
+    for (let i = node.childNodes.length - 1; i >= 0; i--) { const l = _lastText(node.childNodes[i]); if (l) return l; }
+    return null;
+  }
+
+  // 跨节点高亮: 在扁平字符空间中找「文字完全匹配」的起点和终点
+  // 首尾节点之间允许有其他节点，只要边界字符能对上就用 Range.surroundContents
+  function highlightNote(container, noteText, num, noteContent) {
+    if (!noteText) return false;
+    const { segs, flat } = _flatChars(container);
+    if (flat.length < noteText.length) return false;
+
+    // 清理 noteText 的空白，合并成单空格方便匹配带格式的文本
+    const cleanNote = noteText.replace(/[\s\n\r]+/g, " ").trim();
+    const needLen = cleanNote.length;
+
+    for (let startIdx = 0; startIdx <= flat.length - needLen; startIdx++) {
+      const startNode = flat[startIdx].node;
+      const startAbs  = flat[startIdx].abs;
+
+      // 从 startIdx 开始，收集连续 needLen 个字符（跨节点允许）
+      let pos = startIdx;
+      let chars = [];
+      while (pos < flat.length && chars.length < needLen) {
+        chars.push(flat[pos].node.textContent[flat[pos].abs]);
+        pos++;
+      }
+
+      const candidate = chars.join("");
+      // 模糊匹配: 忽略空白差异（两边都去掉空白比较）
+      const candClean = candidate.replace(/\s+/g, " ").trim();
+      if (candClean.length >= needLen) {
+        // 用 candClean 在 candidate 中找 noteText 的位置
+        const m = candidate.indexOf(cleanNote);
+        if (m >= 0) {
+          const sNode = flat[startIdx + m].node;
+          const sOff  = flat[startIdx + m].abs;
+          const eIdx  = startIdx + m + needLen - 1;
+          const eNode = flat[eIdx].node;
+          const eOff  = flat[eIdx].abs + 1;
+          try {
+            return _wrapByRange(sNode, sOff, eNode, eOff, num, noteContent);
+          } catch(e) { /* fall through */ }
+        }
+      }
+
+      // 跳到下个节点
+      let next = startIdx + 1;
+      while (next < flat.length && flat[next].node === startNode) next++;
+      startIdx = next - 1;
+    }
+    return false;
+  }
+
+  // ── 渲染批注 ─────────────────────────────────────────────────
+  if (item.note) {
+    try {
+      const notes = JSON.parse(item.note);
+      if (Array.isArray(notes) && notes.length > 0) {
+        const noteList = [];
+        notes.forEach((n, i) => {
+          if (!n.text || !n.note) return;
+          const num = i + 1;
+          const container = $("#detail-content");
+          // 优先用路径精确重建
+          let applied = false;
+          if (n.startPath && n.endPath && Array.isArray(n.startPath) && Array.isArray(n.endPath)) {
+            let sN = container, eN = container;
+            for (const idx of n.startPath) { sN = sN.childNodes[idx]; if (!sN || sN.nodeType !== 3) { sN = null; break; } }
+            for (const idx of n.endPath)   { eN = eN.childNodes[idx]; if (!eN || eN.nodeType !== 3) { eN = null; break; } }
+            if (sN && eN) {
+              applied = _wrapByRange(sN, n.startOffset, eN, n.endOffset, num, n.note);
+            }
+          }
+          // 兜底:TreeWalker 全局搜索
+          if (!applied) highlightNote(container, n.text, num, n.note);
+          const deleteBtn = currentUser ? `<button class="note-delete" data-index="${i}">×</button>` : '';
+          noteList.push(`<div class="note-item" id="note-${num}"><span class="note-num">${num}.</span><span class="note-text">${esc(n.note)}</span><a href="#annotation-${num}" class="note-back">↑</a>${deleteBtn}</div>`);
+        });
+        if (noteList.length > 0) {
+          $("#detail-content").insertAdjacentHTML("beforeend", `<div class="article-notes"><div class="notes-title"><i class="fas fa-pen"></i> 文章笔记</div>${noteList.join('')}</div>`);
+          $("#detail-content").querySelectorAll(".note-delete").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const idx = parseInt(btn.dataset.index);
+              const item = state.items[state.currentItemIndex];
+              if (!item) return;
+              let notes = [];
+              try {
+                if (item.note) notes = JSON.parse(item.note);
+                if (!Array.isArray(notes)) notes = [];
+              } catch(e) { notes = []; }
+              notes.splice(idx, 1);
+              const noteJson = JSON.stringify(notes);
+              await authFetch(`/items/${item.id}/note`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ note: noteJson }) });
+              item.note = noteJson;
+              showDetail(state.currentItemIndex);
+            });
+          });
+        }
+      }
+    } catch(e) {
+      $("#detail-content").insertAdjacentHTML("beforeend", `<div class="note-highlight"><i class="fas fa-pen" style="color:var(--primary)"></i> ${esc(item.note)}</div>`);
+    }
+  }
+}
+
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function hideDetail() { $("#item-detail").style.display = "none"; $("#content").style.display = ""; $("#floating-toolbar").style.display = "none"; state.currentItemIndex = -1; }
+
+/* ── 自定义音频播放器 ── */
+function initAudioPlayers() {
+  document.querySelectorAll("#detail-content audio").forEach(audio => {
+    if (audio.dataset.replaced) return;
+    audio.dataset.replaced = "1";
+    const wrap = document.createElement("div"); wrap.className = "audio-player";
+    const play = document.createElement("button"); play.className = "ap-play"; play.innerHTML = "<i class=\"fas fa-play\"></i>";
+    const body = document.createElement("div"); body.className = "ap-body";
+    const bar = document.createElement("div"); bar.className = "ap-bar";
+    const fill = document.createElement("div"); fill.className = "ap-bar-fill";
+    const time = document.createElement("div"); time.className = "ap-time";
+    const cur = document.createElement("span"); cur.textContent = "0:00";
+    const dur = document.createElement("span"); dur.textContent = "0:00";
+    time.append(cur, dur);
+    bar.append(fill);
+    body.append(bar, time);
+    wrap.append(play, body);
+    audio.after(wrap);
+    const fmt = s => { if (!isFinite(s)) return "0:00"; const m = Math.floor(s/60); return m + ":" + String(Math.floor(s%60)).padStart(2,"0"); };
+    audio.addEventListener("loadedmetadata", () => { dur.textContent = fmt(audio.duration); });
+    audio.addEventListener("timeupdate", () => { const p = audio.duration ? audio.currentTime/audio.duration*100 : 0; fill.style.width = p+"%"; cur.textContent = fmt(audio.currentTime); });
+    audio.addEventListener("ended", () => { play.innerHTML = "<i class=\"fas fa-play\"></i>"; });
+    play.addEventListener("click", () => { if (audio.paused) { audio.play(); play.innerHTML = "<i class=\"fas fa-pause\"></i>"; } else { audio.pause(); play.innerHTML = "<i class=\"fas fa-play\"></i>"; } });
+    bar.addEventListener("click", e => { const r = bar.getBoundingClientRect(); audio.currentTime = ((e.clientX-r.left)/r.width) * audio.duration; });
+  });
+}
+$("#toolbar-back").addEventListener("click", hideDetail);
+$("#toolbar-prev").addEventListener("click", () => { if (state.currentItemIndex > 0) showDetail(state.currentItemIndex - 1); });
+$("#toolbar-next").addEventListener("click", () => { if (state.currentItemIndex < state.items.length - 1) showDetail(state.currentItemIndex + 1); });
+$("#toolbar-star").addEventListener("click", () => { if (!currentUser) return; const i = state.items[state.currentItemIndex]; if (i) { toggleStar(i); showDetail(state.currentItemIndex); } });
+$("#toolbar-unread").addEventListener("click", () => {
+  if (!currentUser) return;
+  const i = state.items[state.currentItemIndex];
+  if (i) toggleRead(i);
+});
+$("#toolbar-zhconv").addEventListener("click", () => {
+  const contentEl = $("#detail-content");
+  const titleEl = $("#detail-title");
+  const item = state.items[state.currentItemIndex];
+  if (!item) return;
+
+  if (!item._zhconvActive) {
+    // 繁体 → 简体:标题 + 正文一起转
+    const titleText = titleEl.textContent || "";
+    doZhconv("t2s", titleText, t => {
+      doZhconv("t2s", contentEl.innerHTML, result => {
+        item._originalContent = contentEl.innerHTML;
+        item._originalTitle = titleEl.innerHTML;
+        contentEl.innerHTML = result;
+        if (item.link) {
+          titleEl.innerHTML = `<a href="${esc(item.link)}" target="_blank" rel="noopener noreferrer" class="title-link">${esc(t)}</a>`;
+        } else {
+          titleEl.textContent = t;
+        }
+        item._zhconvActive = "t2s";
+        $("#toolbar-zhconv").title = "还原繁体";
+        $("#toolbar-zhconv").classList.add("active");
+      });
+    });
+  } else if (item._zhconvActive === "t2s") {
+    // 简体 → 繁体
+    const titleText = titleEl.textContent || "";
+    doZhconv("s2t", titleText, t => {
+      doZhconv("s2t", contentEl.innerHTML, result => {
+        contentEl.innerHTML = result;
+        if (item.link) {
+          titleEl.innerHTML = `<a href="${esc(item.link)}" target="_blank" rel="noopener noreferrer" class="title-link">${esc(t)}</a>`;
+        } else {
+          titleEl.textContent = t;
+        }
+        item._zhconvActive = "s2t";
+        $("#toolbar-zhconv").title = "还原简体";
+      });
+    });
+  } else {
+    // 还原原始内容
+    contentEl.innerHTML = item._originalContent || item.content || item.summary || "<p>无内容</p>";
+    titleEl.innerHTML = item._originalTitle || item.title || "(无标题)";
+    item._zhconvActive = null;
+    item._originalContent = null;
+    item._originalTitle = null;
+    $("#toolbar-zhconv").title = "繁简转换";
+    $("#toolbar-zhconv").classList.remove("active");
+  }
+});
+
+$("#toolbar-ai").addEventListener("click", () => {
+  const item = state.items[state.currentItemIndex];
+  if (item) showAiSummaryFromDetail();
+});
+
+
+/* ── 渲染 Items ── */
+function renderItems(append = false) {
+  const grid = $("#content");
+  if (!append) grid.innerHTML = "";
+  if (state.items.length === 0 && !append) {
+    grid.innerHTML = `<div id="empty-state"><div class="icon"><i class="fas fa-inbox"></i></div><h3>${state.search ? "没有找到相关文章" : "暂无文章"}</h3><p>${state.search ? "试试其他关键词" : "点击「添加订阅」开始使用"}</p></div>`;
+    return;
+  }
+  if (state.view === "grid") renderCards(grid, append); else renderList(grid, append);
+  grid.querySelectorAll(".loading-sentinel").forEach(s => s.remove());
+  if (state.hasMore) {
+    const s = el("div", "loading-sentinel", ""); s.style.cssText = "min-height:40px;";
+    grid.appendChild(s);
+    const obs = new IntersectionObserver(entries => { if (entries[0].isIntersecting) { obs.disconnect(); s.textContent = "..."; loadItems(false); } }, { rootMargin: "200px" });
+    obs.observe(s);
+  }
+}
+
+
+function renderCards(grid, append) {
+  const frag = document.createDocumentFragment();
+  state.items.forEach((item, idx) => {
+    // 核心修复:如果是追加模式,且 DOM 中已存在该 id 的卡片,则跳过渲染
+    if (append && grid.querySelector(`[data-id="${item.id}"]`)) return;
+
+    const rc = item.is_read ? "read" : "";
+    const uc = item.is_read ? "" : "unread";
+    const sc = item.is_starred ? "starred" : "";
+    const sum = stripHtml(item.content || item.summary || "").slice(0, 120);
+    const fav = faviconHtml("", item.feed_url, item.feed_icon, item.feed_site_url);
+    const card = el("div", `card ${rc}`);
+    card.dataset.id = item.id;
+    card.innerHTML = `<div class="card-header">${fav}<div class="card-meta"><div class="card-feed-title">${esc(item.feed_title || "")}</div></div><div class="card-date">${timeAgo(item.created_on_time ? item.created_on_time * 1000 : item.published, state.lang)}</div></div><div class="card-title ${uc}">${esc(item.title || `(${t("no_title")})`)}</div>${sum ? `<div class="card-summary">${esc(sum)}</div>` : ""}`;
+    card.addEventListener("click", e => { if (!e.target.closest(".card-action-btn")) showDetail(idx); });
+    const readBtn = card.querySelector(".read-btn");
+    if (readBtn) readBtn.addEventListener("click", e => { e.stopPropagation(); toggleRead(item); });
+    const starBtn = card.querySelector(".star-btn");
+    if (starBtn) starBtn.addEventListener("click", e => { e.stopPropagation(); toggleStar(item); });
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+}
+
+function renderList(grid, append) {
+  const frag = document.createDocumentFragment();
+  state.items.forEach((item, idx) => {
+    // 核心修复:如果是追加模式,且 DOM 中已存在该 id 的列表项,则跳过渲染
+    if (append && grid.querySelector(`[data-id="${item.id}"]`)) return;
+
+    const rc = item.is_read ? "read" : "";
+    const uc = item.is_read ? "" : "unread";
+    const sc = item.is_starred ? "starred" : "";
+    const fav = faviconHtml("", item.feed_url, item.feed_icon, item.feed_site_url);
+
+    // 音频播放按钮（仅收藏列表显示，且文章需满足字数阈值）
+    let audioBtn = "";
+    if (state.activeFeed === "starred") {
+      const contentLen = (item.content || item.summary || '').length;
+      const meetsMinLen = currentUser && state.aiSettings && state.aiSettings.enabled && contentLen >= state.aiSettings.minLength;
+      if (meetsMinLen) {
+        const as = item.audio_status;
+        if (as === "pending") {
+          audioBtn = `<span class="audio-btn audio-loading" data-id="${item.id}" title="语音合成中...">
+            <i class="fas fa-spinner fa-spin"></i></span>`;
+        } else if (as === "ready") {
+          audioBtn = `<span class="audio-btn audio-ready" data-id="${item.id}" title="播放朗读">
+            <i class="fas fa-volume-up"></i></span>`;
+        } else if (as === "error") {
+          audioBtn = `<span class="audio-btn audio-error" data-id="${item.id}" title="语音合成失败" onclick="retryAudio(${item.id})">
+            <i class="fas fa-exclamation-circle"></i></span>`;
+        }
+      }
+    }
+
+    const row = el("div", `list-item ${rc}`);
+    row.dataset.id = item.id;
+    row.innerHTML = `${fav}${audioBtn}<div class="list-item-title ${uc}">${esc(item.title || `(${t("no_title")})`)}</div><div class="list-item-meta"><div class="list-item-feed">${esc(item.feed_title || "")}</div><div class="list-item-date">${timeAgo(item.created_on_time ? item.created_on_time * 1000 : item.published, state.lang)}</div></div>`;
+    row.addEventListener("click", e => {
+      // 点击动作按钮时，不要打开详情页
+      if (e.target.closest(".audio-btn, .read-btn, .star-btn, .card-action-btn")) return;
+      showDetail(idx);
+    });
+
+    // 音频播放按钮点击事件
+    row.querySelectorAll(".audio-ready").forEach(btn => {
+      btn.addEventListener("click", e => { e.stopPropagation(); playAudio(item.id); });
+    });
+    frag.appendChild(row);
+  });
+  grid.appendChild(frag);
+}
+
+/* ── API ── */
+async function loadFeeds() { try { const r = await authFetch("/feeds"); state.feeds = await r.json(); renderFeedList(); } catch(e) { console.error(e); } }
+async function loadGroups() { try { const r = await authFetch("/groups"); state.groups = await r.json(); renderFeedList(); updateGroupSelect(); } catch(e) { console.error(e); } }
+async function loadStats() { try { const r = await authFetch("/stats"); const s = await r.json(); $("#stat-feeds").textContent = s.feed_count; $("#stat-unread").textContent = s.unread_count; } catch(e) {} }
+async function loadItems(reset = false) {
+  if (reset) { state.page = 0; state.items = []; state.hasMore = true; }
+  if (state.loading || !state.hasMore) return;
+  state.loading = true;
+
+  const params = new URLSearchParams({ limit: 30, offset: state.page * 30 });
+  if (state.activeFeed !== "starred" && state.activeFeed !== "notes" && state.activeFeed !== null) params.set("feed_id", state.activeFeed);
+  if (state.search) params.set("q", state.search);
+  try {
+    const path = state.activeFeed === "starred" ? "/items/starred?" + params :
+                 state.activeFeed === "notes" ? "/items/notes?" + params :
+                 "/items?" + params;
+
+    const data = await (await authFetch(path)).json();
+
+    // 去重:只添加不存在的项
+    const existingIds = new Set(state.items.map(item => item.id));
+    const newItems = data.items.filter(item => !existingIds.has(item.id));
+    state.items.push(...newItems);
+    state.hasMore = data.items.length === 30;
+    state.page++;
+    renderItems(!reset);
+  } catch(e) { console.error(e); }
+  state.loading = false;
+}
+
+async function addFeed(url, gid) { const r = await authFetch("/feeds", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ url, group_id: gid || null }) }); if (!r.ok) throw new Error((await r.json()).error || "添加失败"); await loadFeeds(); await loadStats(); loadItems(true); }
+async function deleteFeed(id) { await authFetch(`/feeds/${id}`, { method: "DELETE" }); if (state.activeFeed === id) selectFeed(null, t("all_articles")); await loadFeeds(); await loadStats(); loadItems(true); }
+
+async function showFeedDetail(feedId) {
+  const f = state.feeds.find(x => x.id === feedId);
+  if (!f) return;
+  const r = await authFetch(`/feeds/${feedId}`);
+  const detail = r.ok ? await r.json() : null;
+  const fav = faviconHtml("", f.url, f.icon_url, f.site_url);
+  const gName = detail && detail.group_id ? (state.groups.find(g => g.id === detail.group_id) || {}).name || "(未知分组)" : "(未分组)";
+  $("#feed-detail-body").innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">${fav}<strong style="font-size:15px;color:var(--text);">${esc(f.title || f.url)}</strong></div>
+    <div><label style="color:var(--text3);">订阅地址</label><div style="word-break:break-all;margin-bottom:8px;">${esc(f.url)}</div></div>
+    <div><label style="color:var(--text3);">源站地址</label><div style="margin-bottom:8px;">${f.site_url ? `<a href="${esc(f.site_url)}" target="_blank" style="color:var(--accent);">${esc(f.site_url)}</a>` : "(无)"}</div></div>
+    <div><label style="color:var(--text3);">图标地址</label><div style="word-break:break-all;margin-bottom:8px;">${f.icon_url ? `<a href="${esc(f.icon_url)}" target="_blank" style="color:var(--accent);">${esc(f.icon_url)}</a>` : "(无)"}</div></div>
+    <div><label style="color:var(--text3);">所属分组</label><div style="margin-bottom:8px;">${esc(gName)}</div></div>
+    <div><label style="color:var(--text3);">描述</label><div style="margin-bottom:8px;">${esc(detail && detail.description || "(无)")}</div></div>
+    ${detail && detail.updated_at ? `<div><label style="color:var(--text3);">上次更新</label><div>${timeAgo(detail.updated_at, state.lang)}</div></div>` : ""}
+  `;
+  openModal("modal-feed-detail-overlay");
+}
+async function refreshAll() {
+  const btn = $("#refresh-btn");
+  btn.classList.add("spinning"); btn.disabled = true;
+  const timeout = setTimeout(() => { btn.classList.remove("spinning"); btn.disabled = false; }, 10000);
+  for (const f of state.feeds) await authFetch(`/feeds/${f.id}/refresh`, { method: "POST" });
+  setTimeout(() => { loadItems(true); loadStats(); clearTimeout(timeout); btn.classList.remove("spinning"); btn.disabled = false; }, 1000);
+}
+async function markAllRead() {
+  const label = state.activeFeed !== null ? t('current_feed') : t('all_articles');
+  if (!confirm(t("confirm_mark_read", label))) return;
+  if (state.activeFeed !== null) { await authFetch(`/feeds/${state.activeFeed}/read-all`, { method: "PUT" }); } else { for (const f of state.feeds) await authFetch(`/feeds/${f.id}/read-all`, { method: "PUT" }); }
+  await loadItems(true); await loadStats();
+}
+
+async function toggleRead(item) { const v = item.is_read ? 0 : 1; await authFetch(`/items/${item.id}/read`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ is_read: v }) }); item.is_read = v; refreshItemUI(item); loadStats(); loadFeeds(); renderFeedList(); }
+async function toggleStar(item) { const v = item.is_starred ? 0 : 1; await authFetch(`/items/${item.id}/star`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ is_starred: v }) }); item.is_starred = v; refreshItemUI(item); }
+
+let _currentAudio = null;
+// 暂停时保留音频对象，以便恢复播放
+let _pausedAudio = null;
+
+async function playAudio(itemId) {
+  const btn = document.querySelector(`.audio-btn[data-id="${itemId}"]`);
+  if (!btn) return;
+
+  // 如果正在播放或已暂停的是同一个音频 → 切换暂停/恢复
+  if (_currentAudio && _currentAudio._itemId === itemId) {
+    if (_currentAudio.paused) {
+      // 恢复播放
+      _currentAudio.play();
+      btn.innerHTML = '<i class="fas fa-pause"></i>';
+      btn.classList.add("playing");
+    } else {
+      // 暂停
+      _currentAudio.pause();
+      btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+      btn.classList.remove("playing");
+    }
+    return;
+  }
+
+  // 停止之前的音频（不同 item）
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  document.querySelectorAll(".audio-btn.playing").forEach(b => { b.innerHTML = '<i class="fas fa-volume-up"></i>'; b.classList.remove("playing"); });
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const r = await fetch(`/api/items/${itemId}/audio`);
+    if (!r.ok) { btn.innerHTML = '<i class="fas fa-exclamation-circle"></i>'; btn.classList.add("error"); return; }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio._itemId = itemId;
+    audio.addEventListener("ended", () => { URL.revokeObjectURL(url); _currentAudio = null; btn.innerHTML = '<i class="fas fa-volume-up"></i>'; btn.classList.remove("playing"); });
+    audio.addEventListener("error", () => { URL.revokeObjectURL(url); _currentAudio = null; btn.innerHTML = '<i class="fas fa-exclamation-circle"></i>'; btn.classList.add("error"); });
+    audio.play();
+    _currentAudio = audio;
+    btn.innerHTML = '<i class="fas fa-pause"></i>';
+    btn.classList.add("playing");
+  } catch(e) {
+    console.error("Audio play error:", e);
+    btn.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+    btn.classList.add("error");
+  }
+}
+async function retryAudio(itemId) {
+  // 重新触发 TTS 合成
+  await authFetch(`/items/${itemId}/star`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ is_starred: 1 }) });
+  const btn = document.querySelector(`.audio-btn[data-id="${itemId}"]`);
+  if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.classList.remove("error"); btn.classList.add("audio-loading"); }
+}
+
+function refreshItemUI(item) {
+  // 更新工具栏按钮
+  const sb = $("#toolbar-star");
+  if (sb) { sb.innerHTML = item.is_starred ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; sb.classList.toggle("starred", !!item.is_starred); }
+  const rb = $("#toolbar-unread");
+  if (rb) { rb.innerHTML = item.is_read ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-check-circle"></i>'; }
+  // 更新列表卡片:用 data-id 精确定位
+  const card = document.querySelector(`[data-id="${item.id}"]`);
+  if (!card) return;
+  card.classList.toggle("read", !!item.is_read);
+  const t = card.querySelector(".card-title, .list-item-title");
+  if (t) t.classList.toggle("unread", !item.is_read);
+}
+
+/* ── 分组 ── */
+function updateGroupSelect() { const s = $("#modal-group"); s.innerHTML = `<option value="">${t('no_group')}</option>`; state.groups.forEach(g => { const o = document.createElement("option"); o.value = g.id; o.textContent = g.name; s.appendChild(o); }); }
+let editingGroupId = null;
+function renderGroupModal() {
+  const c = $("#group-list-container");
+  if (!state.groups.length) { c.innerHTML = '<div class="group-list-empty">暂无分组</div>'; return; }
+  c.innerHTML = "";
+  state.groups.forEach(g => {
+    const n = state.feeds.filter(f => f.group_id === g.id).length;
+    const item = el("div", "group-list-item");
+    item.innerHTML = `<span class="group-list-name">${esc(g.name)}</span><span class="group-list-count">${t("feeds_count", n)}</span><button class="group-edit-btn" data-gid="${g.id}"><i class="fas fa-edit"></i></button><button class="group-del-btn" data-gid="${g.id}"><i class="fas fa-trash-alt"></i></button>`;
+    item.querySelector(".group-edit-btn").addEventListener("click", () => { editingGroupId = g.id; $("#group-edit-name").value = g.name; openModal("modal-group-edit-overlay"); });
+    item.querySelector(".group-del-btn").addEventListener("click", async () => { if (!confirm(t("confirm_delete_group"))) return; await authFetch(`/groups/${g.id}`, { method: "DELETE" }); state.groups = state.groups.filter(x => x.id !== g.id); renderGroupModal(); loadFeeds(); updateGroupSelect(); });
+    c.appendChild(item);
+  });
+}
+async function createGroup(name) { const r = await authFetch("/groups", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ name }) }); if (!r.ok) { alert((await r.json()).error); return; } state.groups.push(await r.json()); renderGroupModal(); renderFeedList(); updateGroupSelect(); }
+
+/* ── 弹窗 ── */
+function openModal(id) { document.getElementById(id).classList.add("visible"); }
+function closeModal(id) { document.getElementById(id).classList.remove("visible"); }
+$$(".modal-overlay").forEach(o => o.addEventListener("click", e => { if (e.target === o) o.classList.remove("visible"); }));
+
+// "+" 按钮:打开合并弹窗,默认「添加订阅」tab
+$("#plus-btn").addEventListener("click", () => { $("#modal-url").value = ""; $("#modal-group").value = ""; $("#modal-error").style.display = "none"; switchModalTab("subscribe"); openModal("modal-combined-overlay"); setTimeout(() => $("#modal-url").focus(), 100); });
+$("#modal-combined-cancel").addEventListener("click", () => closeModal("modal-combined-overlay"));
+$("#modal-feed-confirm").addEventListener("click", async () => { const u = $("#modal-url").value.trim(); if (!u) { $("#modal-error").textContent = t("enter_feed_url"); $("#modal-error").style.display = "block"; return; } try { await addFeed(u, $("#modal-group").value || null); closeModal("modal-combined-overlay"); } catch(e) { $("#modal-error").textContent = e.message; $("#modal-error").style.display = "block"; } });
+$("#modal-note-save").addEventListener("click", async () => {
+  const item = state.items[state.currentItemIndex]; if (!item) return;
+  const newNote = $("#note-input").value.trim();
+  const rng = window._noteRange;
+
+  // 解析现有笔记(JSON 数组)
+  let notes = [];
+  try {
+    if (item.note && item.note.trim()) notes = JSON.parse(item.note);
+    if (!Array.isArray(notes)) notes = [];
+  } catch(e) { console.error("解析笔记失败:", e, item.note); notes = []; }
+
+  // 追加新批注(含 DOM 路径,刷新后可精确恢复 mark)
+  if (newNote && rng) {
+    notes.push({
+      text: rng.toString(),
+      note: newNote,
+      startPath: (() => {
+        const p = [], cur = rng.startContainer;
+        let node = cur;
+        while (node && node !== $("#detail-content")) {
+          let i = 0, s = node.previousSibling;
+          while (s) { i++; s = s.previousSibling; }
+          p.unshift(i);
+          node = node.parentNode;
+        }
+        return p;
+      })(),
+      startOffset: rng.startOffset,
+      endPath: (() => {
+        const p = [], cur = rng.endContainer;
+        let node = cur;
+        while (node && node !== $("#detail-content")) {
+          let i = 0, s = node.previousSibling;
+          while (s) { i++; s = s.previousSibling; }
+          p.unshift(i);
+          node = node.parentNode;
+        }
+        return p;
+      })(),
+      endOffset: rng.endOffset,
+    });
+  }
+
+  const noteJson = JSON.stringify(notes);
+  await authFetch(`/items/${item.id}/note`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ note: noteJson }) });
+  item.note = noteJson;
+  state.items[state.currentItemIndex].note = noteJson; // 确保同步到 state
+  closeModal("modal-note-overlay");
+  showDetail(state.currentItemIndex);
+});
+$("#modal-url").addEventListener("keydown", e => { if (e.key === "Enter") $("#modal-feed-confirm").click(); });
+
+// Tab 切换
+function switchModalTab(tab) {
+  document.querySelectorAll(".modal-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".modal-tab-content").forEach(c => c.classList.toggle("active", c.id === "tab-" + tab));
+  if (tab === "groups") { renderGroupModal(); $("#new-group-name").value = ""; }
+}
+
+/* ── OPML 导入导出 ── */
+document.getElementById("opml-export-btn").addEventListener("click", () => {
+  window.location.href = "/api/opml/export";
+});
+
+document.getElementById("opml-import-btn").addEventListener("click", () => {
+  document.getElementById("opml-import-file").click();
+});
+
+document.getElementById("opml-import-file").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const resultEl = document.getElementById("opml-result");
+  resultEl.className = "";
+  resultEl.textContent = t("opml_importing");
+  resultEl.style.display = "block";
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await authFetch("/opml/import", { method: "POST", body: formData });
+    const d = await res.json();
+    if (d.ok) {
+      let msg = t("opml_done", d.imported);
+      if (d.skipped) msg += t("opml_skipped", d.skipped);
+      if (d.errors && d.errors.length) msg += "\n" + d.errors.join("\n");
+      resultEl.className = "ok";
+      resultEl.textContent = msg;
+      if (d.imported > 0) { await loadFeeds(); await loadGroups(); await loadStats(); await loadItems(true); }
+    } else {
+      resultEl.className = "err";
+      resultEl.textContent = d.error || t("opml_error", "unknown");
+    }
+  } catch(err) {
+    resultEl.className = "err";
+    resultEl.textContent = t("network_error");
+  }
+  e.target.value = "";
+});
+
+$("#modal-opml-close").addEventListener("click", () => closeModal("modal-combined-overlay"));
+document.querySelectorAll(".modal-tab").forEach(t => t.addEventListener("click", () => switchModalTab(t.dataset.tab)));
+
+$("#modal-group-close").addEventListener("click", () => closeModal("modal-combined-overlay"));
+$("#new-group-name").addEventListener("keydown", e => { if (e.key === "Enter") { const n = e.target.value.trim(); if (n) { createGroup(n); e.target.value = ""; } } });
+$("#group-edit-cancel").addEventListener("click", () => closeModal("modal-group-edit-overlay"));
+$("#group-edit-save").addEventListener("click", async () => { const n = $("#group-edit-name").value.trim(); if (!n || !editingGroupId) return; await authFetch(`/groups/${editingGroupId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ name: n }) }); const g = state.groups.find(x => x.id === editingGroupId); if (g) g.name = n; editingGroupId = null; closeModal("modal-group-edit-overlay"); renderGroupModal(); renderFeedList(); updateGroupSelect(); });
+
+/* ── 按钮事件 ── */
+$("#refresh-btn").addEventListener("click", refreshAll);
+$("#mark-read-btn").addEventListener("click", markAllRead);
+
+/* ── 移动端下拉刷新 ── */
+(function() {
+  const main = $("#main");
+  let startY = 0, pulling = false;
+  main.addEventListener("touchstart", e => {
+    if (main.scrollTop <= 0 && $("#item-detail").style.display !== "flex") {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+  main.addEventListener("touchmove", e => {
+    if (!pulling) return;
+    const diff = e.touches[0].clientY - startY;
+  }, { passive: true });
+  main.addEventListener("touchend", async e => {
+    if (!pulling) return;
+    pulling = false;
+    const diff = e.changedTouches[0].clientY - startY;
+    if (diff < 60) return;
+    await refreshAll();
+  });
+})();
+
+/* ── 移动端详情页左右滑动切换文章 ── */
+(function() {
+  const detail = $("#item-detail");
+  let startX = 0, startY = 0, swiping = false;
+  const THRESHOLD = 80; // 钝感阈值
+  detail.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = true;
+  }, { passive: true });
+  detail.addEventListener("touchend", e => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // 忽略垂直滚动
+    if (Math.abs(dy) > Math.abs(dx) * 1.5) return;
+    if (dx < -THRESHOLD && state.currentItemIndex < state.items.length - 1) {
+      showDetail(state.currentItemIndex + 1);
+    } else if (dx > THRESHOLD && state.currentItemIndex > 0) {
+      showDetail(state.currentItemIndex - 1);
+    }
+  }, { passive: true });
+})();
+
+/* ── 移动端侧边栏手势 ── */
+(function() {
+  const sidebar = $("#sidebar");
+  const main = $("#main");
+  let touchStartX = 0, touchStartY = 0, swiping = false;
+
+  main.addEventListener("touchstart", e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    swiping = true;
+  }, { passive: true });
+
+  main.addEventListener("touchend", e => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    // 只处理水平滑动
+    if (Math.abs(dy) > Math.abs(dx) * 1.5) return;
+    if (dx > 60 && touchStartX < 30 && !sidebar.classList.contains("open")) {
+      // 从左边缘右滑 → 唤起侧边栏
+      sidebar.classList.add("open");
+    } else if (dx < -60 && sidebar.classList.contains("open")) {
+      // 左滑 → 收起侧边栏
+      sidebar.classList.remove("open");
+    }
+  }, { passive: true });
+})();
+
+/* ── 键盘 ── */
+document.addEventListener("keydown", e => {
+  if ($("#item-detail").style.display === "flex") {
+    if (e.key === "ArrowLeft" && state.currentItemIndex > 0) showDetail(state.currentItemIndex - 1);
+    else if (e.key === "ArrowRight" && state.currentItemIndex < state.items.length - 1) showDetail(state.currentItemIndex + 1);
+    else if (e.key === "Escape") hideDetail();
+  }
+});
+
+/* ── 认证 ── */
+let authMode = "login";
+async function checkAuth() {
+  const apiKey = localStorage.getItem("rss_api_key"), username = localStorage.getItem("rss_username");
+  if (apiKey && username) {
+    currentUser = { username, apiKey };
+    // 获取完整用户信息
+    try {
+      const res = await fetch("/api/user/me", { headers: { "X-API-Key": apiKey } });
+      const d = await res.json();
+      if (d.username) { currentUser.displayName = d.display_name; currentUser.avatar = d.avatar; currentUser.default_view = d.default_view; currentUser.open_registration = d.open_registration; }
+    } catch(e) {}
+    const dn = currentUser.displayName || username;
+    const av = currentUser.avatar;
+    if (av) {
+      $("#user-info").innerHTML = `<img src="${esc(av)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.outerHTML=''" /><span style="color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${esc(dn)}</span>`;
+    } else {
+      $("#user-info").innerHTML = `<span class="user-avatar" style="flex-shrink:0">${dn.charAt(0).toUpperCase()}</span><span style="color:var(--text);font-size:13px;margin-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${esc(dn)}</span>`;
+    }
+    $("#user-info").title = dn;
+    $("#plus-btn").style.display = "";
+  } else {
+    currentUser = null;
+    // 未登录，跳转到登录页
+    window.location.href = "/login";
+    return;
+  }
+  applyLang();
+}
+// auth-btn removed → user-info click handles settings/login
+$("#auth-cancel").addEventListener("click", () => closeModal("modal-auth-overlay"));
+$("#auth-switch").addEventListener("click", () => { authMode = authMode === "login" ? "register" : "login"; $("#auth-title").textContent = authMode === "login" ? "登录" : "注册"; $("#auth-submit").textContent = authMode === "login" ? "登录" : "注册"; $("#auth-switch").textContent = authMode === "login" ? "注册新账号" : "已有账号?去登录"; $("#auth-error").style.display = "none"; });
+$("#auth-submit").addEventListener("click", async () => {
+  const u = $("#auth-username").value.trim(), p = $("#auth-password").value;
+  if (!u || !p) { $("#auth-error").textContent = t("fill_fields"); $("#auth-error").style.display = "block"; return; }
+  try {
+    const r = await authFetch(authMode === "login" ? "/auth/login" : "/auth/register", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ username: u, password: p }) });
+    const d = await r.json(); if (!r.ok) { $("#auth-error").textContent = d.error || "失败"; $("#auth-error").style.display = "block"; return; }
+    localStorage.setItem("rss_api_key", d.api_key); localStorage.setItem("rss_username", u);
+    closeModal("modal-auth-overlay"); await checkAuth();
+  } catch(e) { $("#auth-error").textContent = t("network_error"); $("#auth-error").style.display = "block"; }
+});
+$("#auth-password").addEventListener("keydown", e => { if (e.key === "Enter") $("#auth-submit").click(); });
+
+/* ── 文章大纲 TOC ── */
+function generateTOC() {
+  const content = $("#detail-content");
+  const tocBox = $("#article-toc");
+  const tocList = $(".toc-list");
+  if (!content || !tocBox || !tocList) return;
+
+  // 停掉旧的 observer
+  if (window._tocObserver) { window._tocObserver.disconnect(); window._tocObserver = null; }
+
+  // 只显示两级：优先H2+H3，没有H2就H3+H4
+  const hasH2 = content.querySelectorAll("h2").length > 0;
+  const selector = hasH2 ? "h2, h3" : "h3, h4";
+  const headings = content.querySelectorAll(selector);
+  if (headings.length < 2) { tocBox.classList.remove("visible"); return; }
+
+  let html = "";
+  headings.forEach((h, i) => {
+    const raw = h.textContent || "";
+    const txt = raw.replace(/[\u200B-\u200F\uFEFF\u00AD\u2060\u180E]/g, "").trim();
+    if (!txt) return;
+    if (!h.id) h.id = "heading-" + i;
+    const lvl = h.tagName === "H2" || h.tagName === "H3" ? "l1" : "l2";
+    html += `<li class="toc-${lvl}"><a href="#${h.id}" title="${esc(txt)}">${esc(txt)}</a></li>`;
+  });
+  tocList.innerHTML = html;
+  tocBox.classList.add("visible");
+  tocBox.classList.remove("hidden");
+
+  // IntersectionObserver：随滚动高亮对应标题
+  window._tocObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        tocList.querySelectorAll("li").forEach(li => li.classList.remove("active"));
+        const id = e.target.id;
+        const link = tocList.querySelector(`a[href="#${id}"]`);
+        if (link) link.closest("li").classList.add("active");
+        break;
+      }
+    }
+  }, { rootMargin: "-10% 0px -80% 0px", threshold: 0 });
+  headings.forEach(h => window._tocObserver.observe(h));
+
+  // 隐藏按钮
+  const hideBtn = tocBox.querySelector(".toc-hide-btn");
+  if (hideBtn) {
+    hideBtn.onclick = () => {
+      tocBox.classList.add("hidden");
+      $("#toolbar-toc").style.display = ""; // 显示工具栏按钮
+    };
+  }
+  
+  // 工具栏显示按钮
+  const showBtn = $("#toolbar-toc");
+  if (showBtn) {
+    showBtn.style.display = "none"; // TOC 可见时隐藏按钮
+    showBtn.onclick = () => {
+      tocBox.classList.remove("hidden");
+      showBtn.style.display = "none";
+    };
+  }
+}
+
+/* ── 工具栏随滚动显示/隐藏 ── */
+(function() {
+  const detail = $("#item-detail");
+  const toolbar = $("#floating-toolbar");
+  if (!detail || !toolbar) return;
+  
+  let lastScrollY = 0;
+  let scrollTimeout = null;
+  let isHidden = false;
+  
+  // 滚动处理函数
+  function handleScroll() {
+    const currentScrollY = detail.scrollTop;
+    const diff = currentScrollY - lastScrollY;
+    
+    // 向下滑动（阅读越读越深）→ 隐藏工具栏
+    if (diff > 0 && !isHidden) {
+      toolbar.classList.add("toolbar-hidden");
+      isHidden = true;
+    }
+    // 向上滚动或回到顶部 → 显示工具栏
+    else if (diff < 0 && isHidden) {
+      toolbar.classList.remove("toolbar-hidden");
+      isHidden = false;
+    }
+    
+    lastScrollY = currentScrollY;
+    
+    // 停止滚动后自动显示工具栏
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      if (isHidden) {
+        toolbar.classList.remove("toolbar-hidden");
+        isHidden = false;
+      }
+    }, 1500);
+  }
+  
+  // 监听滚动事件
+  detail.addEventListener("scroll", handleScroll, { passive: true });
+  
+  // 进入文章详情时显示工具栏，回到列表时重置
+  const showDetailOriginal = window.showDetail;
+  window.showDetail = async function(...args) {
+    const result = showDetailOriginal ? await showDetailOriginal.apply(this, args) : undefined;
+    // 重置工具栏状态
+    lastScrollY = 0;
+    isHidden = false;
+    toolbar.classList.remove("toolbar-hidden");
+    return result;
+  };
+  
+  const hideDetailOriginal = window.hideDetail;
+  window.hideDetail = function(...args) {
+    lastScrollY = 0;
+    isHidden = false;
+    toolbar.classList.remove("toolbar-hidden");
+    return hideDetailOriginal ? hideDetailOriginal.apply(this, args) : undefined;
+  };
+})();
+
+/* ── 初始化 ── */
+(async () => { applyTheme(); applyView(); await checkAuth(); await fetchAiSettings(); applyLang(); await loadGroups(); await loadFeeds(); await loadStats(); await loadItems(true); })();
+
+</script>
+</body>
+</html>

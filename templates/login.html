@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="階上悦读" />
+  <title>登录 - 階上悦读</title>
+  <link rel="stylesheet" href="/static/index.css?v=20" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png" />
+  <link rel="apple-touch-icon" href="/static/logo.png" />
+<<<<<<< HEAD
+  <script defer src="https://stats.upstairs.cn/script.js" data-website-id="932c949b-1c97-489f-b5a9-afe09295b6de"></script>
+=======
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .login-logo {
+      width: 72px; height: 72px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .login-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      letter-spacing: 2px;
+    }
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text3);
+      margin-bottom: 36px;
+    }
+    .login-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(107,142,142,0.15);
+    }
+    .form-group input::placeholder {
+      color: var(--text3);
+    }
+    .login-error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+      text-align: left;
+    }
+    .login-error i { margin-right: 4px; }
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+    .btn-login:hover { opacity: 0.88; }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+    .switch-mode {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text3);
+    }
+    .switch-mode a {
+      color: var(--primary);
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .switch-mode a:hover { text-decoration: underline; }
+    .login-footer {
+      margin-top: 28px;
+      font-size: 11px;
+      color: var(--text3);
+    }
+    @media (max-width: 480px) {
+      .login-card { padding: 24px 20px; }
+      .login-logo { width: 60px; height: 60px; }
+      .login-title { font-size: 22px; }
+    }
+  
+    /* 主题切换按钮 */
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .theme-toggle:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+</style>
+</head>
+<body>
+  <div class="login-container">
+    <img src="/static/logo.png" alt="" class="login-logo">
+    <div class="login-title">階上悦读</div>
+<<<<<<< HEAD
+    <div class="login-subtitle" id="subtitle">阅读是进步的阶梯</div>
+=======
+    <div class="login-subtitle" id="subtitle">登录你的阅读空间</div>
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+
+    <div class="login-card">
+      <form id="auth-form" autocomplete="on">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input id="username" type="text" name="username" placeholder="输入用户名" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input id="password" type="password" name="password" placeholder="输入密码" autocomplete="current-password" required />
+        </div>
+        <div id="confirm-group" class="form-group" style="display:none">
+          <label for="confirm-password">确认密码</label>
+          <input id="confirm-password" type="password" name="confirm-password" placeholder="再次输入密码" autocomplete="new-password" />
+        </div>
+        <div class="login-error" id="error-msg">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="error-text"></span>
+        </div>
+        <button type="submit" class="btn-login" id="btn-submit">登录</button>
+      </form>
+      <div class="switch-mode">
+        <span id="switch-text">还没有账号？</span>
+        <a id="switch-link">注册新账号</a>
+      </div>
+    </div>
+
+    <div class="login-footer">階上悦读 &copy; 2026</div>
+  </div>
+
+  <script>
+    let mode = 'login'; // 'login' | 'register'
+    const form = document.getElementById('auth-form');
+    const btnSubmit = document.getElementById('btn-submit');
+    const switchLink = document.getElementById('switch-link');
+    const switchText = document.getElementById('switch-text');
+    const confirmGroup = document.getElementById('confirm-group');
+    const errorEl = document.getElementById('error-msg');
+    const errorText = document.getElementById('error-text');
+    const subtitle = document.getElementById('subtitle');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+    function hideError() {
+      errorEl.style.display = 'none';
+    }
+    function setMode(m) {
+      mode = m;
+      hideError();
+      if (m === 'login') {
+        btnSubmit.textContent = '登录';
+        switchText.textContent = '还没有账号？';
+        switchLink.textContent = '注册新账号';
+        confirmGroup.style.display = 'none';
+<<<<<<< HEAD
+        subtitle.textContent = '阅读是进步的阶梯';
+=======
+        subtitle.textContent = '登录你的阅读空间';
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+        document.title = '登录 - 階上悦读';
+      } else {
+        btnSubmit.textContent = '注册';
+        switchText.textContent = '已有账号？';
+        switchLink.textContent = '去登录';
+        confirmGroup.style.display = 'block';
+        subtitle.textContent = '创建你的阅读空间';
+        document.title = '注册 - 階上悦读';
+      }
+    }
+
+    switchLink.addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
+
+    // Check if already logged in
+    (function() {
+      const apiKey = localStorage.getItem('rss_api_key');
+      const username = localStorage.getItem('rss_username');
+      if (apiKey && username) {
+        window.location.href = '/';
+      }
+    })();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showError('用户名和密码不能为空');
+        return;
+      }
+
+      if (mode === 'register') {
+        const confirm = document.getElementById('confirm-password').value;
+        if (password !== confirm) {
+          showError('两次密码不一致');
+          return;
+        }
+        if (password.length < 4) {
+          showError('密码至少 4 位');
+          return;
+        }
+      }
+
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = mode === 'login' ? '登录中...' : '注册中...';
+
+      try {
+        const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || '操作失败');
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = mode === 'login' ? '登录' : '注册';
+          return;
+        }
+
+        localStorage.setItem('rss_api_key', data.api_key);
+        localStorage.setItem('rss_username', username);
+
+        // Redirect to main page
+        window.location.href = '/';
+      } catch (err) {
+        showError('网络错误，请稍后重试');
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = mode === 'login' ? '登录' : '注册';
+      }
+    });
+
+    // Enter key on confirm-password triggers submit
+    document.getElementById('confirm-password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') form.dispatchEvent(new Event('submit'));
+    });
+  </script>
+
+  <button class="theme-toggle" id="theme-btn" title="切换主题">
+    <i class="fas fa-sun"></i>
+  </button>
+
+  <script>
+    // 主题切换
+    function applyTheme() {
+      const theme = localStorage.getItem("rss_theme") || "dark";
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(theme);
+      const btn = document.getElementById("theme-btn");
+      if (btn) {
+        btn.innerHTML = theme === "dark" 
+          ? '<i class="fas fa-sun"></i>' 
+          : '<i class="fas fa-moon"></i>';
+      }
+    }
+    applyTheme();
+
+    document.getElementById("theme-btn").addEventListener("click", () => {
+      const cur = localStorage.getItem("rss_theme") || "dark";
+      localStorage.setItem("rss_theme", cur === "dark" ? "light" : "dark");
+      applyTheme();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upstairs Reader — Self-hosted RSS, reimagined</title>
+<meta name="description" content="A self-hosted, multi-user RSS reader with AI summarization, TTS narration, and newspaper-style reading. Deploy anywhere with Docker.">
+<style>
+/* ── Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #0d0d0d;
+  color: #d4d4d4;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ── Noise overlay ──────────────────────────────────────── */
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1.15; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; }
+p { color: #999; }
+code {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  background: rgba(255,255,255,0.04);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #b8c5c5;
+}
+
+/* ── Container ────────────────────────────────────────────── */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* ── Navigation ──────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(13,13,13,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.nav-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 3.5rem;
+}
+.nav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: #e0e0e0; }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a { font-size: 0.85rem; color: #888; transition: color 0.2s; letter-spacing: 0.01em; }
+.nav-links a:hover { color: #c8d8d8; }
+.nav-cta {
+  background: rgba(107,142,142,0.15);
+  border: 1px solid rgba(107,142,142,0.3);
+  color: #b8c5c5 !important;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem !important;
+  transition: all 0.2s;
+}
+.nav-cta:hover {
+  background: rgba(107,142,142,0.25);
+  border-color: rgba(107,142,142,0.5);
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+section { padding: 6rem 0; position: relative; }
+
+/* ── Hero ────────────────────────────────────────────────── */
+.hero {
+  padding: 10rem 0 8rem;
+  text-align: center;
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -200px; left: 50%; transform: translateX(-50%);
+  width: 700px; height: 700px;
+  background: radial-gradient(circle at center, rgba(107,142,142,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero h1 { color: #f0f0f0; margin-bottom: 1rem; }
+.hero h1 span { color: #8aaaaa; }
+.hero .tagline {
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  color: #777; max-width: 600px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+.hero-actions {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.6rem;
+  border-radius: 8px;
+  font-size: 0.9rem; font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: rgba(107,142,142,0.2);
+  border: 1px solid rgba(107,142,142,0.4);
+  color: #c0d0d0;
+}
+.btn-primary:hover {
+  background: rgba(107,142,142,0.3);
+  border-color: rgba(107,142,142,0.6);
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #888;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.14);
+  color: #aaa;
+}
+
+/* ── Divider ─────────────────────────────────────────────── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.15), transparent);
+  max-width: 800px; margin: 0 auto;
+}
+
+/* ── Section Header ──────────────────────────────────────── */
+.section-header { text-align: center; margin-bottom: 4rem; }
+.section-header h2 { color: #e0e0e0; margin-bottom: 0.6rem; }
+.section-header p { font-size: 1.05rem; max-width: 520px; margin: 0 auto; }
+
+/* ── Features Grid ───────────────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+.feature-card {
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 2rem 1.6rem;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card:hover {
+  border-color: rgba(107,142,142,0.2);
+  background: rgba(107,142,142,0.03);
+  transform: translateY(-2px);
+}
+.feature-icon {
+  font-size: 1.6rem; margin-bottom: 1rem;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(107,142,142,0.08);
+  border-radius: 10px;
+}
+.feature-card h3 { color: #ccc; margin-bottom: 0.5rem; font-size: 1rem; }
+.feature-card p { font-size: 0.875rem; line-height: 1.65; }
+
+/* ── Tech Stack ──────────────────────────────────────────── */
+.tech-strip {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;
+  margin-top: 2rem;
+}
+.tech-tag {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #999;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+}
+.tech-tag:hover {
+  border-color: rgba(107,142,142,0.25);
+  color: #bbb;
+}
+
+/* ── Quick Start ─────────────────────────────────────────── */
+.quickstart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+.code-block {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 1.6rem;
+  position: relative;
+}
+.code-block h3 {
+  font-size: 0.9rem; color: #999; margin-bottom: 1rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.code-block pre {
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: #c0c8c8;
+}
+.code-block pre .comment { color: #555; }
+.code-block pre .cmd { color: #8aaaaa; }
+.code-block a {
+  display: inline-block; margin-top: 1.2rem;
+  font-size: 0.82rem; color: #8aaaaa;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.code-block a:hover { border-color: #8aaaaa; }
+
+/* ── Stats ─────────────────────────────────────────────────── */
+.stats-row {
+  display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;
+  margin-top: 3rem;
+}
+.stat { text-align: center; }
+.stat-num {
+  font-size: 2.4rem; font-weight: 700; color: #c0d0d0;
+  letter-spacing: -0.03em;
+}
+.stat-label { font-size: 0.82rem; color: #666; margin-top: 0.3rem; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 3rem 0 2.5rem;
+  text-align: center;
+}
+footer .footer-links {
+  display: flex; gap: 2rem; justify-content: center;
+  list-style: none; margin-bottom: 1.5rem;
+}
+footer .footer-links a {
+  font-size: 0.82rem; color: #666;
+  transition: color 0.2s;
+}
+footer .footer-links a:hover { color: #8aaaaa; }
+footer .copyright { font-size: 0.8rem; color: #444; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-links { gap: 1rem; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  section { padding: 4rem 0; }
+  .hero { padding: 7rem 0 5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .quickstart-grid { grid-template-columns: 1fr; }
+  .container { padding: 0 1.2rem; }
+  .nav-inner { padding: 0 1.2rem; }
+}
+
+/* ── Glass accents ───────────────────────────────────────── */
+.glass-panel {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+/* ── API Table ───────────────────────────────────────────── */
+.api-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.api-endpoint {
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  font-size: 0.84rem;
+}
+.api-endpoint .method {
+  font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: #8aaaaa; margin-bottom: 0.3rem;
+}
+.api-endpoint .path {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.8rem; color: #ccc;
+  margin-bottom: 0.3rem; word-break: break-all;
+}
+.api-endpoint .desc { color: #666; font-size: 0.78rem; }
+
+/* ── Scroll animation ────────────────────────────────────── */
+.fade-in {
+  opacity: 0; transform: translateY(20px);
+  animation: fadeUp 0.7s ease-out forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">Upstairs Reader</a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#quickstart">Quick Start</a></li>
+      <li><a href="#api">API</a></li>
+      <li><a href="#quickstart" class="nav-cta">Deploy →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <h1 class="fade-in">Your feeds,<br>on your <span>terms</span>.</h1>
+    <p class="tagline fade-in delay-1">
+      A self-hosted, multi-user RSS reader with AI-powered summaries,
+      text-to-speech narration, and a newspaper-style reading experience.
+      Deploy anywhere with Docker.
+    </p>
+    <div class="hero-actions fade-in delay-2">
+      <a href="#quickstart" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Quick Start
+      </a>
+      <a href="https://github.com" class="btn btn-secondary" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Features ──────────────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Everything you need in a reader</h2>
+      <p>Built for people who want control over their reading experience — no ads, no tracking, no compromises.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Multi-user Support</h3>
+        <p>Registration, login, and per-user read status. Star articles, write notes, and build your own reading profile. The first user becomes admin.</p>
+      </div>
+      <div class="feature-card fade-in delay-1">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>RSS &amp; Atom Parsing</h3>
+        <p>Add any RSS or Atom feed URL. Automatic periodic refresh every 30 minutes keeps your feeds current without manual intervention.</p>
+      </div>
+      <div class="feature-card fade-in delay-2">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </div>
+        <h3>Feed Organization</h3>
+        <p>Group feeds into custom categories — Tech, News, Blogs, whatever fits your workflow. Drag, rename, and reorder groups with ease.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3>AI Summarization</h3>
+        <p>One-click article summaries via any OpenAI-compatible API. Works with OpenAI, Azure, Aliyun Bailian, Ollama, or your own local LLM.</p>
+      </div>
+      <div class="feature-card fade-in delay-1">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </div>
+        <h3>TTS Audio Narration</h3>
+        <p>Star an article and Upstairs Reader automatically generates high-quality audio narration via MiMo TTS. Listen to your reading list on the go.</p>
+      </div>
+      <div class="feature-card fade-in delay-2">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3>Newspaper View</h3>
+        <p>A curated newspaper-style reading mode with cover images. Flip through your feeds like a morning paper — random, curated, beautiful.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>Dark &amp; Light Themes</h3>
+        <p>Glass-morphism UI with automatic system theme detection. Switch between dark and light modes seamlessly — your eyes will thank you.</p>
+      </div>
+      <div class="feature-card fade-in delay-1">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        </div>
+        <h3>Fever API Compatible</h3>
+        <p>Use your favorite RSS client apps that support the Fever API protocol. Read on desktop, tablet, or phone — you choose the interface.</p>
+      </div>
+      <div class="feature-card fade-in delay-2">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+        </div>
+        <h3>Traditional &amp; Simplified Chinese</h3>
+        <p>Built-in zh-Hant ↔ zh-Hans toggle. Read in your preferred script — the conversion happens at render time without modifying your data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Tech Stack ─────────────────────────────────────────── -->
+<section id="stack">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Simple, familiar stack</h2>
+      <p>No complicated build pipelines. No JavaScript fatigue. Just clean, maintainable code.</p>
+    </div>
+    <div class="tech-strip fade-in delay-1">
+      <span class="tech-tag">Python 3.10+</span>
+      <span class="tech-tag">Flask</span>
+      <span class="tech-tag">SQLite</span>
+      <span class="tech-tag">feedparser</span>
+      <span class="tech-tag">OpenAI API</span>
+      <span class="tech-tag">Vanilla JS</span>
+      <span class="tech-tag">CSS Custom Properties</span>
+      <span class="tech-tag">Docker</span>
+      <span class="tech-tag">Docker Compose</span>
+      <span class="tech-tag">MiMo TTS</span>
+      <span class="tech-tag">Jinja2</span>
+      <span class="tech-tag">REST API</span>
+    </div>
+    <div class="stats-row fade-in delay-2">
+      <div class="stat">
+        <div class="stat-num">0</div>
+        <div class="stat-label">npm dependencies</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">1</div>
+        <div class="stat-label">command to deploy</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">&infin;</div>
+        <div class="stat-label">feeds, no limits</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Quick Start ────────────────────────────────────────── -->
+<section id="quickstart">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Up and running in minutes</h2>
+      <p>One command is all it takes. Data persists locally, zero external services required.</p>
+    </div>
+    <div class="quickstart-grid fade-in delay-1">
+      <div class="code-block">
+        <h3>Local Development</h3>
+<pre><span class="comment"># Clone the repository</span>
+<span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
+<span class="cmd">cd</span> upstairs-reader
+
+<span class="comment"># Install dependencies</span>
+<span class="cmd">pip install</span> -r requirements.txt
+
+<span class="comment"># Start the server</span>
+<span class="cmd">python</span> app.py</pre>
+        <a href="#">Open http://localhost:5321 &rarr;</a>
+      </div>
+      <div class="code-block">
+        <h3>Docker</h3>
+<pre><span class="comment"># Clone and start</span>
+<span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
+<span class="cmd">cd</span> upstairs-reader
+
+<span class="comment"># One command</span>
+<span class="cmd">docker compose up</span> -d</pre>
+        <a href="#">Open http://localhost:5321 &rarr;</a>
+      </div>
+    </div>
+    <p style="text-align:center; margin-top:2rem; font-size:0.84rem; color:#555;">
+      The first registered user automatically becomes the administrator and can configure AI, TTS, and registration settings.
+    </p>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── API Reference ──────────────────────────────────────── -->
+<section id="api">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>REST API</h2>
+      <p>Everything the web UI does is available through the API. Integrate, extend, automate.</p>
+    </div>
+
+    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Feeds</h3>
+    <div class="api-grid">
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/feeds</div><div class="desc">List all feeds with item counts</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/feeds</div><div class="desc">Add a new feed by URL</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/feeds/:id</div><div class="desc">Update feed title or group</div></div>
+      <div class="api-endpoint"><div class="method">DELETE</div><div class="path">/api/feeds/:id</div><div class="desc">Delete a feed and its items</div></div>
+    </div>
+
+    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Items</h3>
+    <div class="api-grid">
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items</div><div class="desc">List items with filters &amp; pagination</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items/:id</div><div class="desc">Get a single item</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/read</div><div class="desc">Mark as read / unread</div></div>
+      <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/star</div><div class="desc">Toggle star &mdash; triggers AI+TTS</div></div>
+    </div>
+
+    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Auth &amp; Settings</h3>
+    <div class="api-grid">
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/register</div><div class="desc">Create an account</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/login</div><div class="desc">Login &rarr; returns API key</div></div>
+      <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/ai/summarize/:id</div><div class="desc">Generate AI summary</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/stats</div><div class="desc">Feed / item / unread counts</div></div>
+    </div>
+
+    <h3 style="color:#888; margin:2rem 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Integration</h3>
+    <div class="api-grid">
+      <div class="api-endpoint"><div class="method">GET / POST</div><div class="path">/api/fever</div><div class="desc">Fever API &mdash; works with RSS clients</div></div>
+      <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/user/:username/profile</div><div class="desc">Public profile with stars &amp; notes</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Deployment ─────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Deploy anywhere</h2>
+      <p>Run it on a VPS, a home server, or a Synology NAS. Same code, same experience.</p>
+    </div>
+    <div class="features-grid">
+      <div class="glass-panel fade-in">
+        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#9729;&#65039; VPS</h3>
+        <p style="font-size:0.85rem;">
+          Clone, <code>docker compose up -d</code>, and point your domain to <code>localhost:5321</code> with nginx or Caddy as a reverse proxy. Add HTTPS with Let's Encrypt in one command.
+        </p>
+      </div>
+      <div class="glass-panel fade-in delay-1">
+        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#127968; Home Server</h3>
+        <p style="font-size:0.85rem;">
+          Runs on anything that can run Python 3.10+ or Docker. Raspberry Pi, old laptop, NAS — if it's on your network, it can serve your feeds.
+        </p>
+      </div>
+      <div class="glass-panel fade-in delay-2">
+        <h3 style="color:#ccc; margin-bottom:0.8rem;">&#128230; Synology NAS</h3>
+        <p style="font-size:0.85rem;">
+          Install Python 3, pip install the requirements with a mirror for faster downloads, and <code>python app.py</code>. Your data lives on your own hardware.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <ul class="footer-links">
+      <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/issues" target="_blank" rel="noopener">Issues</a></li>
+      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/README.md" target="_blank" rel="noopener">Documentation</a></li>
+    </ul>
+    <p class="copyright">
+      Upstairs Reader &copy; 2025. Built for people who love reading. Licensed under MIT.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

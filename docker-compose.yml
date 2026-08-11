@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  upstairs-rss:
+    build: .
+    container_name: upstairs-rss
+    restart: unless-stopped
+    ports:
+      - "5321:5321"
+    volumes:
+      - ./data:/data
+      - ./audio_cache:/app/audio_cache
+    environment:
+      - DB_PATH=/data/rss.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5321/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

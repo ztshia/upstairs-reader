@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="声闻 · 新闻播客 — 用 AI 摘要和语音合成为你朗读每日新闻，轻松听完 RSS 订阅">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="声闻">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0f13">
+<meta property="og:title" content="声闻 · 新闻播客">
+<meta property="og:description" content="用 AI 摘要和语音合成为你朗读每日新闻，轻松听完 RSS 订阅">
+<meta property="og:type" content="website">
+<title>声闻 · 新闻播客</title>
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png">
+<link rel="apple-touch-icon" href="/static/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  :root {
+    /* 深色主题（默认） */
+    --bg: #0e0f13;
+    --bg-card: #16171d;
+    --bg-hover: #1e2028;
+    --fg: #e8e6e1;
+    --fg-muted: #7a7872;
+    --accent: #d4883a;
+    --accent-glow: rgba(212, 136, 58, 0.25);
+    --accent-dim: #a06828;
+    --border: #2a2b33;
+    --radius: 12px;
+    --shadow: rgba(0,0,0,0.4);
+    --blob-opacity: 0.15;
+  }
+  :root.light {
+    /* 浅色主题 */
+    --bg: #f0ede6;
+    --bg-card: #ffffff;
+    --bg-hover: #e8e4da;
+    --fg: #1a1a1a;
+    --fg-muted: #7a7a7a;
+    --accent: #c07830;
+    --accent-glow: rgba(192, 120, 48, 0.15);
+    --accent-dim: #d4883a;
+    --border: #d8d4cb;
+    --radius: 12px;
+    --shadow: rgba(0,0,0,0.1);
+    --blob-opacity: 0.08;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 背景氛围 */
+  .atmosphere {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .atmosphere .blob {
+    position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.15;
+  }
+  .atmosphere .blob-1 {
+    width: 600px; height: 600px; background: var(--accent);
+    top: -200px; right: -100px;
+    animation: blobDrift1 20s ease-in-out infinite;
+  }
+  .atmosphere .blob-2 {
+    width: 400px; height: 400px; background: #3a6b8c;
+    bottom: -100px; left: -50px;
+    animation: blobDrift2 25s ease-in-out infinite;
+  }
+  @keyframes blobDrift1 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-60px, 40px) scale(1.1); }
+  }
+  @keyframes blobDrift2 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px,-30px) scale(1.15); }
+  }
+
+  /* 顶部导航 */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    background: rgba(14,15,19,0.6);
+  }
+  :root.light header { background: rgba(240,237,230,0.8); }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px; background: var(--accent);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--bg); box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .logo-text {
+    font-family: 'Noto Serif SC', serif; font-weight: 900;
+    font-size: 22px; letter-spacing: 4px;
+  }
+  .logo-sub { font-size: 11px; color: var(--fg-muted); letter-spacing: 2px; margin-top: 2px; }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a {
+    color: var(--fg-muted); text-decoration: none; font-size: 14px;
+    font-weight: 500; transition: color 0.3s; letter-spacing: 1px;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .np-refresh-btn {
+    background: none; border: 1px solid var(--border);
+    color: var(--fg-muted); padding: 6px 16px; border-radius: 20px;
+    cursor: pointer; font-size: 13px; transition: all 0.3s;
+  }
+  .np-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .theme-toggle {
+    background: none; border: 1px solid var(--border);
+    color: var(--fg-muted); width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; font-size: 14px; transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+
+  /* 主区域 */
+  main {
+    position: relative; z-index: 10;
+    display: grid; grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 81px);
+  }
+
+  /* ── 左侧：按天分组的新闻列表 ── */
+  .news-panel {
+    padding: 36px 40px; overflow-y: auto;
+    border-right: 1px solid var(--border);
+    box-sizing: border-box; min-width: 0;
+  }
+  .news-panel::-webkit-scrollbar { width: 4px; }
+  .news-panel::-webkit-scrollbar-track { background: transparent; }
+  .news-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .panel-header { margin-bottom: 28px; }
+  .panel-header h2 {
+    font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 900; margin-bottom: 6px;
+  }
+  .panel-header p { color: var(--fg-muted); font-size: 13px; line-height: 1.6; }
+
+  /* 天分区 */
+  .day-section { margin-bottom: 28px; }
+  .day-header {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 8px 0; margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .day-header .day-date {
+    font-family: 'Noto Serif SC', serif; font-size: 15px; font-weight: 700;
+    color: var(--accent);
+  }
+  .day-header .day-weekday { font-size: 12px; color: var(--fg-muted); }
+  .day-header .day-count {
+    margin-left: auto; font-size: 11px; color: var(--fg-muted);
+    background: var(--bg-card); padding: 2px 10px; border-radius: 10px;
+  }
+
+  /* 新闻条目 */
+  .news-item {
+    padding: 16px 20px; border-radius: var(--radius);
+    cursor: pointer; transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    border: 1px solid transparent; position: relative; overflow: hidden;
+  }
+  .news-item::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); border-radius: 0 2px 2px 0;
+    transform: scaleY(0); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .news-item:hover { background: var(--bg-hover); border-color: var(--border); }
+  .news-item.active {
+    background: var(--bg-card); border-color: var(--accent-dim);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 0 30px var(--accent-glow);
+  }
+  .news-item.active::before { transform: scaleY(1); }
+
+  .news-item-top {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .news-feed {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: rgba(255,255,255,0.04); color: var(--fg-muted);
+  }
+  .news-audio-icon { color: var(--accent); font-size: 10px; margin-left: auto; }
+  .news-item h3 {
+    font-family: 'Noto Serif SC', serif; font-size: 15px;
+    font-weight: 700; line-height: 1.5; margin-bottom: 6px;
+    transition: color 0.3s;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-item.active h3 { color: var(--accent); }
+  .news-item p {
+    font-size: 12px; color: var(--fg-muted); line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-item .play-hint {
+    position: absolute; right: 20px; top: 50%;
+    transform: translateY(-50%) scale(0.8); opacity: 0;
+    transition: all 0.3s; width: 36px; height: 36px;
+    background: var(--accent); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-size: 13px;
+  }
+  .news-item:hover .play-hint { opacity: 1; transform: translateY(-50%) scale(1); }
+  .news-item.active .play-hint { opacity: 0; }
+
+  /* 空状态 */
+  .np-empty {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; color: var(--fg-muted); text-align: center; padding: 60px 20px;
+  }
+  .np-empty i { font-size: 48px; opacity: 0.3; }
+  .np-loading { text-align: center; padding: 40px; color: var(--fg-muted); font-size: 13px; }
+  .np-loading i { display: block; font-size: 24px; margin-bottom: 10px; animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* ── 右侧播放区 ── */
+  .player-panel {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 60px 48px; position: relative;
+    position: sticky; top: 0; height: calc(100vh - 81px);
+    overflow-y: auto; overflow-x: hidden;
+    box-sizing: border-box; min-width: 0;
+  }
+
+  /* 旋转唱片 */
+  .vinyl-container { position: relative; width: 300px; height: 300px; margin-bottom: 36px; }
+  .vinyl-glow {
+    position: absolute; inset: -30px; border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    animation: glowPulse 4s ease-in-out infinite;
+  }
+  .vinyl-glow.paused { animation: none; opacity: 0.3; }
+  @keyframes glowPulse {
+    0%,100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.05); }
+  }
+  .vinyl-disc {
+    width: 300px; height: 300px; border-radius: 50%;
+    position: relative;
+    animation: discSpin 10s linear infinite;
+    animation-play-state: paused;
+  }
+  .vinyl-disc.playing { animation-play-state: running; }
+  @keyframes discSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .vinyl-outer {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      #1a1a1a, #2a2a2a, #1a1a1a, #252525,
+      #1a1a1a, #2a2a2a, #1a1a1a, #252525,
+      #1a1a1a
+    );
+    box-shadow: 0 0 0 4px #111, 0 0 40px rgba(0,0,0,0.5);
+  }
+  .vinyl-grooves {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-radial-gradient(
+      circle at center,
+      transparent 0px, transparent 3px,
+      rgba(255,255,255,0.03) 3px, rgba(255,255,255,0.03) 4px
+    );
+  }
+  .vinyl-label {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-dim), var(--accent));
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .vinyl-label i { font-size: 24px; color: rgba(255,255,255,0.7); }
+  .vinyl-label span { font-size: 9px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+  .vinyl-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #555; border: 2px solid #333; z-index: 2;
+  }
+
+  /* 唱臂 */
+  .tonearm {
+    position: absolute; top: -20px; right: -10px;
+    width: 110px; height: 4px;
+    transform-origin: right center; transform: rotate(-30deg);
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); z-index: 5;
+  }
+  .tonearm.playing { transform: rotate(-15deg); }
+  .tonearm-arm {
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, #888, #aaa, #888);
+    border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .tonearm-head {
+    position: absolute; left: -6px; top: -4px;
+    width: 12px; height: 12px; background: #ccc; border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .tonearm-pivot {
+    position: absolute; right: -8px; top: -8px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: radial-gradient(circle, #aaa, #666);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* 播放信息 */
+  .now-playing { text-align: center; margin-bottom: 32px; width: 100%; max-width: 380px; }
+  .now-playing-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+    color: var(--accent); margin-bottom: 10px; font-weight: 700;
+  }
+  .now-playing h2 {
+    font-family: 'Noto Serif SC', serif; font-size: 20px;
+    font-weight: 900; line-height: 1.4; margin-bottom: 6px;
+  }
+  .now-playing .subtitle { font-size: 13px; color: var(--fg-muted); }
+
+  /* 状态徽章 */
+  .np-status {
+    font-size: 11px; padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--border); display: inline-flex;
+    align-items: center; gap: 6px; margin-bottom: 24px;
+  }
+  .np-status.ready  { border-color: rgba(106,154,106,0.4); color: #6a9a6a; }
+  .np-status.pending { border-color: rgba(200,160,96,0.4); color: #c8a060; }
+  .np-status.none   { border-color: rgba(90,90,90,0.4); color: var(--fg-muted); }
+
+  /* 进度条 */
+  .progress-container { width: 100%; max-width: 380px; margin-bottom: 28px; }
+  .progress-bar-wrapper {
+    width: 100%; height: 5px; background: var(--border);
+    border-radius: 3px; cursor: pointer; position: relative; overflow: visible;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 3px; width: 0%; position: relative;
+    transition: width 0.1s linear; pointer-events: none;
+  }
+  .progress-thumb {
+    position: absolute; right: -7px; top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 14px; height: 14px; background: var(--accent);
+    border-radius: 50%; box-shadow: 0 0 10px var(--accent-glow);
+    transition: transform 0.2s;
+  }
+  .progress-bar-wrapper:hover .progress-thumb { transform: translateY(-50%) scale(1); }
+  .progress-times {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-size: 12px; color: var(--fg-muted); font-variant-numeric: tabular-nums;
+  }
+
+  /* 控制按钮 */
+  .controls { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .ctrl-btn {
+    background: none; border: none; color: var(--fg-muted);
+    font-size: 17px; cursor: pointer; transition: all 0.3s;
+    width: 44px; height: 44px; display: flex;
+    align-items: center; justify-content: center; border-radius: 50%;
+  }
+  .ctrl-btn:hover { color: var(--fg); background: var(--bg-hover); }
+  .ctrl-play {
+    width: 60px; height: 60px;
+    background: var(--accent) !important; color: var(--bg) !important;
+    font-size: 22px; box-shadow: 0 4px 24px var(--accent-glow); transition: all 0.3s;
+  }
+  .ctrl-play:hover { transform: scale(1.08); box-shadow: 0 6px 32px var(--accent-glow); }
+
+  .fav-btn {
+    background: none; border: none; color: var(--fg-muted);
+    font-size: 20px; cursor: pointer; transition: all 0.3s;
+    width: 44px; height: 44px; display: flex;
+    align-items: center; justify-content: center; border-radius: 50%;
+  }
+  .fav-btn:hover { color: #e74c3c; }
+  .fav-btn .fas.fa-heart { color: #e74c3c; }
+
+  /* 响应式 */
+  @media (max-width: 900px) {
+    main {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+    }
+    .news-panel {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: 50vh;
+      padding: 20px 16px;
+    }
+    .player-panel {
+      padding: 24px 20px;
+      height: auto;
+      min-height: 50vh;
+    }
+    .vinyl-container { width: 160px; height: 160px; }
+    .vinyl-disc { width: 160px; height: 160px; }
+    .vinyl-label { width: 64px; height: 64px; }
+    .vinyl-label img { width: 40px; height: 40px; }
+    header { padding: 12px 16px; }
+    .logo-text { font-size: 18px; letter-spacing: 2px; }
+    .logo-sub { display: none; }
+    .nav-links { gap: 16px; }
+    .nav-links a { font-size: 13px; }
+    .np-refresh-btn { padding: 6px 12px; font-size: 12px; }
+    .panel-header { margin-bottom: 16px; }
+    .panel-header h2 { font-size: 20px; }
+    .day-section { margin-bottom: 20px; }
+    .news-item { padding: 12px 16px; }
+    .news-item h3 { font-size: 14px; }
+    .controls { gap: 16px; margin-bottom: 20px; }
+    .ctrl-btn { width: 40px; height: 40px; font-size: 16px; }
+    .ctrl-play { width: 56px; height: 56px; font-size: 20px; }
+    .now-playing-title { font-size: 15px; -webkit-line-clamp: 2; }
+    .now-playing-feed { font-size: 11px; }
+    .atmosphere .blob-1 { width: 300px; height: 300px; }
+    .atmosphere .blob-2 { width: 200px; height: 200px; }
+  }
+  @media (max-width: 480px) {
+    .vinyl-container { width: 130px; height: 130px; }
+    .vinyl-disc { width: 130px; height: 130px; }
+    .vinyl-label { width: 52px; height: 52px; }
+    .vinyl-label img { width: 32px; height: 32px; }
+    .player-panel { padding: 16px; min-height: 45vh; }
+    .news-panel { max-height: 55vh; }
+  }
+
+  .fade-switch { animation: fadeSwitch 0.5s ease; }
+  @keyframes fadeSwitch { 0% { opacity:0; transform: translateY(10px); } 100% { opacity:1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="atmosphere">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"><i class="fas fa-podcast"></i></div>
+    <div>
+      <div class="logo-text">声闻</div>
+      <div class="logo-sub">VOICE NEWS</div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="/">订阅列表</a></li>
+    <li><a href="/newspaper" class="active">新闻播客</a></li>
+  </ul>
+  <div class="header-actions">
+    <button class="theme-toggle" onclick="toggleTheme()" title="切换主题" id="themeToggle">
+      <i class="fas fa-moon"></i>
+    </button>
+    <button class="np-refresh-btn" onclick="loadItems()">
+      <i class="fas fa-arrow-rotate-right" style="margin-right:6px"></i>换一批
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- 左侧：按天分组的新闻列表 -->
+  <section class="news-panel" id="newsPanel">
+    <div class="panel-header">
+      <h2 id="dateTitle">加载中...</h2>
+      <p id="lunarSub"></p>
+    </div>
+    <div id="newsList">
+      <div class="np-loading">
+        <i class="fas fa-circle-notch"></i>
+        正在加载新闻...
+      </div>
+    </div>
+  </section>
+
+  <!-- 右侧播放区 -->
+  <section class="player-panel" id="playerPanel">
+    <div class="vinyl-container" id="vinylWrap">
+      <div class="vinyl-glow paused" id="vinylGlow"></div>
+      <div class="vinyl-disc" id="vinylDisc">
+        <div class="vinyl-outer"></div>
+        <div class="vinyl-grooves"></div>
+        <div class="vinyl-label">
+          <img id="coverImg" src="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;position:absolute;inset:0;">
+          <i class="fas fa-microphone-lines" id="coverIcon"></i>
+          <span>AI SUMMARY</span>
+        </div>
+        <div class="vinyl-center"></div>
+      </div>
+      <div class="tonearm" id="tonearm">
+        <div class="tonearm-arm"></div>
+        <div class="tonearm-head"></div>
+        <div class="tonearm-pivot"></div>
+      </div>
+    </div>
+
+    <div class="now-playing" id="nowPlaying">
+      <div class="now-playing-label">声闻播客</div>
+      <h2 id="playingTitle" style="color:var(--fg-muted);font-size:16px;font-weight:400;">从左侧选择一篇新闻</h2>
+      <div class="subtitle" id="playingSub"></div>
+    </div>
+
+    <div class="np-status none" id="playerStatus">
+      <i class="fas fa-circle"></i>
+      <span id="statusText">等待选择</span>
+    </div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar-wrapper" id="progressBar"
+           onmousedown="seekStart(event)"
+           ontouchstart="seekStart(event)">
+        <div class="progress-fill" id="progressFill">
+          <div class="progress-thumb"></div>
+        </div>
+      </div>
+      <div class="progress-times">
+        <span id="timeCurrent">0:00</span>
+        <span id="timeTotal">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls" id="playerControls">
+      <button class="ctrl-btn" id="favBtn" onclick="toggleFavorite()" title="收藏">
+        <i class="far fa-heart"></i>
+      </button>
+      <button class="ctrl-btn" onclick="prevItem()" title="上一曲"><i class="fas fa-backward-step"></i></button>
+      <button class="ctrl-btn ctrl-play" id="btnPlay" onclick="togglePlay()"><i class="fas fa-play"></i></button>
+      <button class="ctrl-btn" onclick="nextItem()" title="下一曲"><i class="fas fa-forward-step"></i></button>
+      <button class="ctrl-btn" onclick="skipBack()" title="后退15秒"><i class="fas fa-rotate-left"></i></button>
+      <button class="ctrl-btn" onclick="skipFwd()" title="前进15秒"><i class="fas fa-rotate-right"></i></button>
+    </div>
+  </section>
+</main>
+
+<audio id="audioEl" preload="auto"></audio>
+
+<script>
+const WEEKDAYS = ["周日","周一","周二","周三","周四","周五","周六"];
+let currentItem = null;
+let audio = document.getElementById("audioEl");
+let isLoading = false;
+
+// 主题切换
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle("light");
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+  updateThemeIcon(isLight);
+}
+function updateThemeIcon(isLight) {
+  const icon = document.querySelector("#themeToggle i");
+  if (icon) {
+    icon.className = isLight ? "fas fa-sun" : "fas fa-moon";
+  }
+}
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  if (saved === "light") {
+    document.documentElement.classList.add("light");
+    updateThemeIcon(true);
+  }
+}
+
+// 按天分组渲染
+function groupByDay(items) {
+  const groups = {};
+  items.forEach(item => {
+    const d = new Date(item.published || item.created_on_time * 1000);
+    if (isNaN(d)) return;
+    const key = d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
+    if (!groups[key]) {
+      groups[key] = {
+        date: d,
+        items: []
+      };
+    }
+    groups[key].items.push(item);
+  });
+  // 每天最多取5条，按时间降序（新的在前）
+  Object.values(groups).forEach(g => {
+    g.items.sort((a,b) => (b.published || 0) - (a.published || 0));
+    g.items = g.items.slice(0, 5);
+  });
+  // 按天降序（新的在前）
+  return Object.values(groups).sort((a,b) => b.date - a.date);
+}
+
+function escHtml(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderGrouped(groups) {
+  const list = document.getElementById("newsList");
+  if (!groups.length) {
+    list.innerHTML = '<div class="np-empty"><i class="fas fa-newspaper"></i><div>暂无符合条件的新闻<br>（正文需超过2000字）</div></div>';
+    return;
+  }
+  list.innerHTML = groups.map(g => {
+    const d = g.date;
+    const dateStr = d.getFullYear() + "年" + (d.getMonth()+1) + "月" + d.getDate() + "日";
+    const wd = WEEKDAYS[d.getDay()];
+    return `<div class="day-section">
+      <div class="day-header">
+        <span class="day-date">${dateStr}</span>
+        <span class="day-weekday">${wd}</span>
+        <span class="day-count">${g.items.length} 篇</span>
+      </div>
+      ${g.items.map(item => {
+        const contentLen = (item.content || "").length;
+        const showIcon = item.has_audio || (item.summary && contentLen >= 500);
+        const audioIcon = showIcon
+          ? (item.has_audio ? '<i class="fas fa-volume-up news-audio-icon"></i>' : '<i class="fas fa-file-lines news-audio-icon" style="opacity:0.3"></i>')
+          : '';
+        return `<div class="news-item" data-id="${item.id}" onclick="selectItem(${item.id})">
+          <div class="news-item-top">
+            <span class="news-feed">${escHtml(item.feed_title || "")}</span>
+            ${audioIcon}
+          </div>
+          <h3>${escHtml(item.title || "")}</h3>
+          <p>${escHtml((item.summary || "").substring(0, 80))}</p>
+          <div class="play-hint"><i class="fas fa-play" style="margin-left:2px"></i></div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+}
+
+// 加载数据
+async function loadItems() {
+  const list = document.getElementById("newsList");
+  list.innerHTML = '<div class="np-loading"><i class="fas fa-circle-notch"></i>正在加载新闻...</div>';
+  try {
+    // 只取当天+昨天的新闻，最多8条
+    const resp = await fetch("/api/newspaper/random-items?limit=200");
+    const data = await resp.json();
+    let items = data.items || [];
+    // 按发布时间降序排序（新的在前，旧的在后）
+    items.sort((a, b) => {
+      const aTime = a.published || a.created_on_time * 1000 || 0;
+      const bTime = b.published || b.created_on_time * 1000 || 0;
+      return bTime - aTime;
+    });
+    window._npItems = {};
+    items.forEach(i => { window._npItems[i.id] = i; });
+    // 客户端过滤：最近14天，最多8条
+    const nowTs = Date.now();
+    const todayStart = new Date().setHours(0,0,0,0);
+    const days14Ago = todayStart - (2 * 86400000);
+    items = items.filter(item => {
+      const ts = item.created_on_time * 1000;
+      if (!ts || ts < 1000000000000) return true; // 无时间戳的也保留
+      return ts >= days14Ago;
+    }).slice(0, 8);
+    window._npDisplayOrder = items.map(i => i.id);
+    const groups = groupByDay(items);
+    renderGrouped(groups);
+    // 自动播放第一条
+    if (groups.length > 0 && groups[0].items.length > 0) {
+      setTimeout(() => selectItem(groups[0].items[0].id), 500);
+    }
+  } catch(e) {
+    list.innerHTML = '<div class="np-empty"><i class="fas fa-exclamation-triangle"></i><div>加载失败：' + e.message + '</div></div>';
+  }
+}
+
+// 选中文章
+function authHeaders() {
+  const k = localStorage.getItem("rss_api_key");
+  return k ? { "X-API-Key": k } : {};
+}
+
+function setCover(url) {
+  const img = document.getElementById("coverImg");
+  const icon = document.getElementById("coverIcon");
+  const label = document.getElementById("coverImg").parentElement;
+  if (url) {
+    img.src = url;
+    img.style.display = "block";
+    icon.style.display = "none";
+    label.querySelector("span").style.display = "none";
+    img.onerror = () => { img.style.display = "none"; icon.style.display = ""; label.querySelector("span").style.display = ""; };
+  } else {
+    img.style.display = "none";
+    icon.style.display = "";
+    label.querySelector("span").style.display = "";
+  }
+}
+
+async function selectItem(id) {
+  if (isLoading) return;
+  const item = window._npItems && window._npItems[id];
+  if (!item) return;
+
+  document.querySelectorAll(".news-item").forEach(el => el.classList.remove("active"));
+  const activeEl = document.querySelector(".news-item[data-id=\"" + id + "\"]");
+  if (activeEl) activeEl.classList.add("active");
+
+  currentItem = item;
+  stopAudio();
+
+  // 恢复默认样式
+  const titleEl = document.getElementById("playingTitle");
+  titleEl.style.color = "";
+  titleEl.style.fontSize = "";
+  titleEl.style.fontWeight = "";
+  document.querySelector(".now-playing-label").textContent = "正在播放";
+
+  const d = new Date(item.published || item.created_on_time * 1000);
+  const dateStr = isNaN(d) ? "" : (d.getFullYear() + "年" + (d.getMonth()+1) + "月" + d.getDate() + "日 · " + WEEKDAYS[d.getDay()]);
+  document.getElementById("playingTitle").textContent = item.title || "";
+  document.getElementById("playingSub").textContent = dateStr;
+
+  // 设置封面
+  setCover(item.cover_url);
+
+  // 动画切换
+  const np = document.getElementById("nowPlaying");
+  np.classList.remove("fade-switch");
+  void np.offsetWidth;
+  np.classList.add("fade-switch");
+
+  resetPlayerUI();
+  // 立即开始预加载下一条（在播放当前条之前就开始准备下一条）
+  preloadNextForItem(id);
+
+  if (item.has_audio) {
+    showStatus("ready", "可播放");
+    await playAudio(id);
+  } else {
+    const contentLen = (item.content || "").length;
+    if (contentLen < 500) {
+      showStatus("none", "文章太短，无法朗读");
+      return;
+    }
+    // 无音频 → 先尝试合成，再播放
+    showStatus("pending", item.summary ? "正在合成音频..." : "正在生成 AI 摘要...");
+    await generateAndPlay(id, !!item.summary);
+  }
+}
+
+// 独立的预加载函数：在播放当前条时就预加载下一条
+function preloadNextForItem(currentId) {
+  const allIds = window._npDisplayOrder || Object.keys(window._npItems || {}).map(Number);
+  const curIdx = allIds.indexOf(Number(currentId));
+  if (curIdx < 0 || curIdx >= allIds.length - 1) return;
+  const nextId = allIds[curIdx + 1];
+  const nextItem = window._npItems && window._npItems[nextId];
+  if (!nextItem) return;
+  // 已有音频的不需要预加载
+  if (nextItem.has_audio) return;
+  // 内容太短不预加载
+  if ((nextItem.content || "").length < 500) return;
+
+  // 异步预加载下一条的摘要和 TTS
+  setTimeout(async () => {
+    try {
+      // 更新 currentItem 引用，防止切换后还在加载上一条的下一条
+      if (currentItem && currentItem.id !== currentId) return;
+
+      if (!nextItem.summary) {
+        const sr = await fetch("/api/ai/summarize/" + nextId, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() }
+        });
+        const sd = await sr.json();
+        if (sd.ok && sd.summary) {
+          nextItem.summary = sd.summary;
+          window._npItems[nextId].summary = sd.summary;
+        }
+      }
+      const tr = await fetch("/api/items/" + nextId + "/tts", { method: "POST" });
+      const td = await tr.json();
+      if (td.status === "ready" || td.task_id) {
+        _preloadedId = nextId;
+        // 只有在还在播当前条时才显示"已就绪"
+        if (currentItem && currentItem.id === currentId) {
+          showStatus("ready", "下一篇已就绪");
+        }
+      }
+    } catch(e) { /* silent */ }
+  }, 0);
+}
+
+function showStatus(type, text) {
+  const el = document.getElementById("playerStatus");
+  el.className = "np-status " + type;
+  el.style.display = "inline-flex";
+  document.getElementById("statusText").textContent = text;
+}
+
+function resetPlayerUI() {
+  document.getElementById("vinylDisc").classList.remove("playing");
+  document.getElementById("vinylGlow").classList.add("paused");
+  document.getElementById("tonearm").classList.remove("playing");
+  document.getElementById("btnPlay").innerHTML = '<i class="fas fa-play"></i>';
+  document.getElementById("progressFill").style.width = "0%";
+  document.getElementById("timeCurrent").textContent = "0:00";
+  document.getElementById("timeTotal").textContent = "0:00";
+}
+
+async function generateAndPlay(id, hasSummary) {
+  isLoading = true;
+  try {
+    // Step 1: 如果没有摘要，先触发 AI 总结
+    if (!hasSummary) {
+      showStatus("pending", "正在生成 AI 摘要...");
+      const sumResp = await fetch("/api/ai/summarize/" + id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() }
+      });
+      const sumData = await sumResp.json();
+      if (!sumResp.ok || !sumData.ok) {
+        showStatus("ready", "无法朗读此篇");
+        return;
+      }
+      // 更新内存中的摘要
+      if (window._npItems && window._npItems[id]) {
+        window._npItems[id].summary = sumData.summary;
+      }
+      currentItem.summary = sumData.summary;
+    }
+
+    // Step 2: 触发 TTS 合成
+    showStatus("pending", "正在合成语音...");
+    const ttsResp = await fetch("/api/items/" + id + "/tts", { method: "POST" });
+    const ttsData = await ttsResp.json();
+    if (ttsData.status === "ready") {
+      await playAudio(id);
+      return;
+    }
+
+    // Step 3: 轮询等待音频就绪
+    showStatus("pending", "合成中，请稍候...");
+    for (let i = 0; i < 90; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const r = await fetch("/api/items/" + id + "/audio");
+      if (r.ok) { await playAudio(id); return; }
+    }
+    showStatus("ready", "无法朗读此篇");
+  } catch(e) {
+    showStatus("ready", "无法朗读此篇");
+  } finally { isLoading = false; }
+}
+
+async function playAudio(id) {
+  stopAudio();
+  const url = "/api/items/" + id + "/audio?t=" + Date.now();
+  audio.src = url;
+  audio._itemId = id;
+  return new Promise((resolve, reject) => {
+    const onCanPlay = () => {
+      audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("error", onError);
+      audio.play().then(() => {
+        setPlaying(true);
+        resolve();
+      }).catch(reject);
+    };
+    const onError = () => {
+      audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("error", onError);
+      showStatus("none", "音频加载失败");
+      reject(new Error("audio load error"));
+    };
+    audio.addEventListener("canplay", onCanPlay);
+    audio.addEventListener("error", onError);
+    audio.load();
+  });
+}
+
+function togglePlay() {
+  if (!currentItem) return;
+  if (audio.paused) {
+    audio.play().catch(() => {});
+    setPlaying(true);
+  } else {
+    audio.pause();
+    setPlaying(false);
+  }
+}
+
+function setPlaying(playing) {
+  const disc = document.getElementById("vinylDisc");
+  const glow = document.getElementById("vinylGlow");
+  const arm  = document.getElementById("tonearm");
+  if (playing) {
+    disc.classList.add("playing");
+    glow.classList.remove("paused");
+    arm.classList.add("playing");
+    document.getElementById("btnPlay").innerHTML = '<i class="fas fa-pause"></i>';
+    showStatus("ready", "正在播放");
+    startPreloadNext(); // 开始播放时自动预加载下一篇
+  } else {
+    disc.classList.remove("playing");
+    glow.classList.add("paused");
+    arm.classList.remove("playing");
+    document.getElementById("btnPlay").innerHTML = '<i class="fas fa-play"></i>';
+    stopPreloadNext(); // 暂停时停止预加载
+    if (audio.currentTime > 0 && audio.currentTime < (audio.duration || Infinity)) {
+      showStatus("ready", "已暂停");
+    }
+  }
+}
+
+function stopAudio() {
+  audio.pause();
+  audio.src = "";
+  setPlaying(false);
+}
+
+let _seeking = false;
+
+function skipBack() {
+  if (!audio || !audio.duration) return;
+  audio.currentTime = Math.max(0, audio.currentTime - 15);
+}
+function skipFwd() {
+  if (!audio || !audio.duration) return;
+  audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
+}
+
+function seekStart(e) {
+  if (!audio || !audio.duration) return;
+  _seeking = true;
+  seekAudio(e);
+  document.addEventListener('mousemove', _onDocMouseMove);
+  document.addEventListener('mouseup', _onDocMouseUp);
+}
+function _onDocMouseMove(e) { seekDrag(e); }
+function _onDocMouseUp(e) { seekEnd(e); }
+function seekDrag(e) {
+  if (!_seeking) return;
+  seekAudio(e);
+}
+function seekEnd(e) {
+  _seeking = false;
+  seekAudio(e);
+  document.removeEventListener('mousemove', _onDocMouseMove);
+  document.removeEventListener('mouseup', _onDocMouseUp);
+}
+function seekAudio(e) {
+  if (!audio || !audio.duration) return;
+  const rect = document.getElementById("progressBar").getBoundingClientRect();
+  const touch = e.touches && e.touches[0];
+  const clientX = touch ? touch.clientX : e.clientX;
+  if (clientX === null || clientX === undefined) return;
+  const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  audio.currentTime = pct * audio.duration;
+  document.getElementById("progressFill").style.width = (pct * 100) + "%";
+}
+
+audio.addEventListener("timeupdate", () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("timeCurrent").textContent = fmtTime(audio.currentTime);
+});
+audio.addEventListener("loadedmetadata", () => {
+  document.getElementById("timeTotal").textContent = fmtTime(audio.duration);
+});
+audio.addEventListener("ended", () => {
+  setPlaying(false);
+  document.getElementById("progressFill").style.width = "0%";
+  document.getElementById("timeCurrent").textContent = "0:00";
+  // 5秒后播放下一条
+  const nextId = getAdjacentItem(1);
+  if (nextId) {
+    showStatus("pending", "5秒后播放下一篇...");
+    setTimeout(() => playNextItem(), 5000);
+  } else {
+    showStatus("ready", "播完了");
+  }
+});
+
+// 预加载/预合成下一条
+let _preloadTimer = null;
+let _preloadedId = null;
+
+function startPreloadNext() {
+  stopPreloadNext();
+  if (!currentItem) return;
+  const allIds = Object.keys(window._npItems).map(Number);
+  const curIdx = allIds.indexOf(currentItem.id);
+  if (curIdx < 0 || curIdx >= allIds.length - 1) return;
+  const nextId = allIds[curIdx + 1];
+  const nextItem = window._npItems[nextId];
+  if (!nextItem) return;
+  if (nextItem.has_audio) return;
+  // 内容太短不预加载
+  if ((nextItem.content || "").length < 500) return;
+
+  _preloadTimer = setTimeout(async () => {
+    try {
+      showStatus("pending", "正在准备下一篇...");
+      if (!nextItem.summary) {
+        const sr = await fetch("/api/ai/summarize/" + nextId, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() }
+        });
+        const sd = await sr.json();
+        if (sd.ok && sd.summary) {
+          nextItem.summary = sd.summary;
+          window._npItems[nextId].summary = sd.summary;
+        }
+      }
+      const tr = await fetch("/api/items/" + nextId + "/tts", { method: "POST" });
+      const td = await tr.json();
+      if (td.status === "ready" || td.task_id) {
+        _preloadedId = nextId;
+        showStatus("ready", "下一篇已就绪");
+      }
+    } catch(e) { /* silent */ }
+  }, 0); // 立即开始预加载下一条
+}
+
+function stopPreloadNext() {
+  if (_preloadTimer) { clearTimeout(_preloadTimer); _preloadTimer = null; }
+}
+
+async function playNextItem() {
+  stopPreloadNext();
+  const nextId = getAdjacentItem(1);
+  if (!nextId) return;
+  const nextItem = window._npItems && window._npItems[nextId];
+  
+  // 如果已经有音频，直接播放
+  if (nextItem && nextItem.has_audio) {
+    selectItem(nextId);
+    return;
+  }
+  
+  // 如果已经触发过预加载（_preloadedId === nextId），等待合成完成
+  if (_preloadedId === nextId) {
+    showStatus("pending", "等待下一篇准备就绪...");
+    // 最多等待30秒，每秒检查一次
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const r = await fetch("/api/items/" + nextId + "/audio");
+        if (r.ok) {
+          selectItem(nextId);
+          return;
+        }
+      } catch(e) {}
+    }
+    // 等待超时，重新触发合成
+    _preloadedId = null;
+  }
+  
+  selectItem(nextId);
+}
+
+function playPrevItem() {
+  stopPreloadNext();
+  const prevId = getAdjacentItem(-1);
+  if (prevId) selectItem(prevId);
+}
+
+function nextItem() { playNextItem(); }
+function prevItem() { playPrevItem(); }
+
+function getAdjacentItem(dir) {
+  // 使用 displayOrder 数组来获取上一条/下一条（按列表顺序）
+  if (!window._npDisplayOrder || window._npDisplayOrder.length === 0) return null;
+  if (!currentItem) return window._npDisplayOrder[0];
+  const curIdx = window._npDisplayOrder.indexOf(currentItem.id);
+  const newIdx = curIdx + dir;
+  if (newIdx < 0) return null;
+  if (newIdx >= window._npDisplayOrder.length) return null;
+  return window._npDisplayOrder[newIdx];
+}
+audio.addEventListener("error", () => {
+  setPlaying(false);
+  showStatus("none", "播放出错");
+});
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return "0:00";
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return m + ":" + String(sec).padStart(2, "0");
+}
+
+let isStarred = false;
+
+async function toggleFavorite() {
+  if (!currentItem) return;
+  const newState = !isStarred;
+  try {
+    const resp = await fetch("/api/items/" + currentItem.id + "/star", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ is_starred: newState ? 1 : 0 })
+    });
+    if (resp.ok) {
+      isStarred = newState;
+      updateFavBtn();
+    }
+  } catch(e) { /* silent */ }
+}
+
+function updateFavBtn() {
+  const btn = document.getElementById("favBtn");
+  const icon = btn.querySelector("i");
+  if (isStarred) {
+    icon.className = "fas fa-heart";
+  } else {
+    icon.className = "far fa-heart";
+  }
+}
+
+// 在 selectItem 中重置收藏状态
+const _origSelectItem = selectItem;
+selectItem = function(id) {
+  isStarred = false;
+  updateFavBtn();
+  return _origSelectItem(id);
+};
+
+// 农历计算（简化版）
+function getLunarInfo() {
+  const LunarDate = (y,m,d) => {
+    const lInfo = [
+      [0,2,9,0x0bd08,6], [0,1,27,0x0c560,5], [0,4,17,0x054a0,5], [0,2,7,0x0d6a0,13], [0,3,26,0x0ad50,10],
+      [0,1,14,0x055d0,8], [0,3,3,0x04ae0,8], [0,4,22,0x0a570,7], [0,2,11,0x05260,7], [0,3,31,0x0d260,12],
+      [0,1,19,0x0d950,7], [0,2,8,0x16554,6], [0,3,28,0x056a0,5], [0,1,16,0x09ad0,6], [0,4,5,0x055d2,5],
+      [0,2,24,0x04ae0,6], [0,3,13,0x0a5b0,5], [0,1,2,0x0a4d0,4], [0,5,21,0x0d250,10], [0,2,9,0x1d255,9],
+      [0,1,29,0x0b540,8], [0,3,18,0x0d6a0,7], [0,2,7,0x0ada2,7], [0,4,25,0x095b0,6], [0,1,15,0x04970,6],
+      [0,3,4,0x0a4b0,5], [0,2,23,0x0b4a5,14], [0,1,11,0x06a50,6], [0,3,1,0x06d40,5], [0,2,20,0x1ab54,12],
+      [0,1,8,0x02b60,6], [0,4,28,0x09570,7], [0,2,16,0x052f2,7], [0,3,5,0x04970,5], [0,1,25,0x0a5a0,5],
+      [0,2,13,0x0b450,10], [0,3,2,0xb955,9], [0,1,21,0x16954,8], [0,2,10,0x0aa50,6], [0,4,29,0x0a6a0,6],
+      [0,1,17,0x1ad50,11], [0,3,6,0x02b60,5], [0,2,24,0x09570,5], [0,1,13,0x14952,10], [0,3,2,0x0a950,8],
+      [0,1,22,0x04aa0,6], [0,2,10,0x0a2c0,6], [0,4,30,0x0bae4,8], [0,1,18,0x0ad50,7], [0,2,7,0x055d9,7],
+      [0,3,26,0x04ba0,5], [0,1,15,0x0a5b0,5], [0,2,4,0x15176,10], [0,3,23,0x052b0,5], [0,1,11,0x0a930,6],
+      [0,2,1,0x07954,7], [0,4,20,0x0aa50,6], [0,1,8,0x0b550,8], [0,3,28,0x0b940,7], [0,2,16,0x06a50,5],
+      [0,1,5,0x174a0,12], [0,3,24,0x0aba4,7], [0,2,12,0x0a5b0,5], [0,4,1,0x052b0,6], [0,1,20,0x0a930,6],
+      [0,2,9,0x09570,6], [0,3,28,0x04aa0,5], [0,1,17,0x0a4b0,5], [0,2,5,0x0baa4,10], [0,4,25,0x0ad50,8]
+    ];
+    const baseYear = 2000;
+    let offsetDays = 0;
+    for (let by = baseYear; by < y; by++) {
+      const idx = by - baseYear;
+      if (idx >= lInfo.length) break;
+      const info = lInfo[idx];
+      offsetDays += 365 + (info[0] ? 366 : 354) + (info[4] > 0 ? 29 : 0);
+    }
+    for (let mm = 1; mm < m; mm++) {
+      const idx = y - baseYear;
+      if (idx >= lInfo.length) { offsetDays += 30; continue; }
+      const info = lInfo[idx];
+      const leapMonth = (info[1] >> 4) & 0xf;
+      const hasLeap = leapMonth > 0 && mm > leapMonth;
+      offsetDays += (mm === leapMonth && info[4] > 0) ? 30 : 29 + ((info[1] >> (mm-1)) & 1 ? 1 : 0);
+      if (hasLeap) offsetDays += 30;
+    }
+    offsetDays += d - 1;
+    let ly = y, lm = 1, ld = 1;
+    let daysLeft = offsetDays;
+    while (daysLeft >= 30 || lm <= 12) {
+      const idx = ly - baseYear;
+      if (idx < 0 || idx >= lInfo.length) break;
+      const info = lInfo[idx];
+      const leapM = (info[1] >> 4) & 0xf;
+      const monthLen = 29 + ((info[1] >> Math.min(lm-1, 11)) & 1 ? 1 : 0);
+      if (daysLeft < monthLen) { ld = daysLeft + 1; break; }
+      daysLeft -= monthLen;
+      lm++;
+      if (leapM > 0 && lm === leapM + 1) {
+        const leapLen = info[4] > 0 ? 30 : 29;
+        if (daysLeft < leapLen) { ld = daysLeft + 1; break; }
+        daysLeft -= leapLen;
+        lm++;
+      }
+      if (lm > 12) { ly++; lm = 1; }
+    }
+    const lunarMonths = ["正","二","三","四","五","六","七","八","九","十","冬","腊"];
+    const lunarDays = ["初一","初二","初三","初四","初五","初六","初七","初八","初九","初十",
+                       "十一","十二","十三","十四","十五","十六","十七","十八","十九","二十",
+                       "廿一","廿二","廿三","廿四","廿五","廿六","廿七","廿八","廿九","三十"];
+    const gan = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+    const zhi = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+    const animals = ["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"];
+    const yearGZ = gan[(ly - 4) % 10] + zhi[(ly - 4) % 12];
+    const animal = animals[(ly - 4) % 12];
+    return { year: ly, month: lm, day: ld,
+             monthStr: lunarMonths[lm-1] + "月", dayStr: lunarDays[ld-1],
+             yearGZ: yearGZ, animal: animal };
+  };
+  return LunarDate(y, m, d);
+}
+
+function renderDateHeader() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+  const wds = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  const wd = wds[now.getDay()];
+  try {
+    const lunar = getLunarInfo(y, m, d);
+    document.getElementById("dateTitle").textContent =
+      `${y}年${m}月${d}日 ${wd}`;
+    document.getElementById("lunarSub").textContent =
+      `农历${lunar.monthStr}${lunar.dayStr} · ${lunar.yearGZ}【${lunar.animal}】年}`;
+  } catch(e) {
+    document.getElementById("dateTitle").textContent = `${y}年${m}月${d}日 ${wd}`;
+    document.getElementById("lunarSub").textContent = "";
+  }
+}
+
+// 初始化
+initTheme();
+renderDateHeader();
+loadItems();
+</script>
+</body>
+</html>

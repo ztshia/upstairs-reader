@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="階上悦读" />
+  <title>{{ profile_user.display_name or profile_user.username }} - 階上悦读</title>
+  <link rel="stylesheet" href="/static/index.css?v=25" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png" />
+  <link rel="apple-touch-icon" href="/static/logo.png" />
+<<<<<<< HEAD
+  <script defer src="https://stats.upstairs.cn/script.js" data-website-id="932c949b-1c97-489f-b5a9-afe09295b6de"></script>
+=======
+>>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-y: auto;
+    }
+    /* 顶部导航 */
+    .nav-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--glass-bg);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .nav-bar .logo {
+      width: 28px; height: 28px; border-radius: 7px;
+    }
+    .nav-bar .site-name {
+      font-size: 16px; font-weight: 600; color: var(--text);
+      letter-spacing: 1px; text-decoration: none;
+    }
+    .nav-bar .back-btn {
+      margin-left: auto;
+      font-size: 13px; color: var(--text2);
+      text-decoration: none; display: flex; align-items: center; gap: 4px;
+      padding: 6px 12px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .nav-bar .back-btn:hover { background: var(--hover-bg); }
+
+    /* 个人资料卡片 */
+    .profile-card {
+      max-width: 640px; margin: 40px auto; padding: 0 20px;
+    }
+    .profile-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; border-radius: 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--surface); border: 2px solid var(--border);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .avatar-placeholder {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 600; flex-shrink: 0;
+    }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-name {
+      font-size: 18px; font-weight: 600; color: var(--text);
+      margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .profile-username {
+      font-size: 12px; color: var(--text3); margin-bottom: 8px;
+    }
+    .profile-stats {
+      display: flex; gap: 16px;
+    }
+    .stat-item {
+      display: flex; align-items: baseline; gap: 4px;
+      cursor: pointer; transition: color 0.2s;
+    }
+    .stat-item:hover { color: var(--primary); }
+    .stat-value {
+      font-size: 16px; font-weight: 600; color: var(--text);
+    }
+    .stat-item:hover .stat-value { color: var(--primary); }
+    .stat-label {
+      font-size: 11px; color: var(--text3);
+    }
+
+    /* Tab 切换 */
+    .tabs {
+      max-width: 640px; margin: 20px auto 0; padding: 0 20px;
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 10px 20px; font-size: 14px; font-weight: 500;
+      color: var(--text3); background: none; border: none;
+      cursor: pointer; position: relative; font-family: inherit;
+      transition: color 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--text);
+    }
+    .tab-btn.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 12px; right: 12px;
+      height: 2px; background: var(--primary); border-radius: 1px;
+    }
+
+    /* 文章列表 */
+    .items-container {
+      max-width: 640px; margin: 16px auto 60px; padding: 0 20px;
+    }
+    .item-card {
+      padding: 16px 20px; border-radius: 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      margin-bottom: 10px; cursor: pointer;
+      transition: all 0.2s; text-decoration: none; display: block;
+    }
+    .item-card:hover {
+      background: var(--hover-bg);
+      border-color: var(--primary);
+    }
+    .item-title {
+      font-size: 15px; font-weight: 500; color: var(--text);
+      margin-bottom: 6px; line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .item-meta {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text3);
+    }
+    .item-meta .feed-title { color: var(--text2); }
+    .item-meta i { font-size: 10px; }
+    /* 笔记卡片 - 微博转发样式 */
+    .note-card {
+      margin-top: 10px; border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .note-my-comment {
+      padding: 12px 14px;
+      font-size: 14px; color: var(--text);
+      line-height: 1.6;
+      border-bottom: 1px solid var(--border);
+      background: var(--glass-bg);
+    }
+    .note-my-comment i {
+      color: var(--primary); margin-right: 6px; font-size: 12px;
+    }
+    .note-quote {
+      padding: 10px 14px;
+      font-size: 13px; color: var(--text3);
+      line-height: 1.6;
+      background: var(--surface);
+      border-left: 3px solid var(--border);
+      margin: 0;
+    }
+    .note-quote::before {
+      content: '"';
+      font-size: 18px; color: var(--text3); opacity: 0.5;
+      margin-right: 4px;
+    }
+    .note-quote::after {
+      content: '"';
+      font-size: 18px; color: var(--text3); opacity: 0.5;
+      margin-left: 4px;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text3);
+    }
+    .empty-state i { font-size: 40px; margin-bottom: 12px; opacity: 0.4; display: block; }
+    .empty-state p { font-size: 14px; }
+
+    /* 加载更多 */
+    .load-more {
+      text-align: center; padding: 16px;
+    }
+    .load-more button {
+      padding: 8px 24px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text2); font-size: 13px; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
+    }
+    .load-more button:hover {
+      background: var(--hover-bg); color: var(--text);
+    }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .profile-header { padding: 16px; gap: 12px; }
+      .avatar, .avatar-placeholder { width: 64px; height: 64px; font-size: 20px; }
+      .profile-name { font-size: 16px; }
+      .profile-stats { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <img class="logo" src="/static/logo.png" alt="階上悦读" onerror="this.style.display='none'" />
+    <a class="site-name" href="/">階上悦读</a>
+    <a class="back-btn" href="/">
+      <i class="fas fa-arrow-left"></i> 返回首页
+    </a>
+    <button class="back-btn" id="theme-btn" title="切换主题" style="margin-left:8px">
+      <i class="fas fa-sun"></i>
+    </button>
+
+  </div>
+
+  <!-- 个人资料 -->
+  <div class="profile-card">
+    <div class="profile-header">
+      {% if profile_user.avatar %}
+      <img class="avatar" src="{{ profile_user.avatar }}" alt="{{ profile_user.display_name or profile_user.username }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <div class="avatar-placeholder" style="display:none">{{ (profile_user.display_name or profile_user.username)[0] }}</div>
+      {% else %}
+      <div class="avatar-placeholder">{{ (profile_user.display_name or profile_user.username)[0] }}</div>
+      {% endif %}
+      <div class="profile-info">
+        <div class="profile-name">{{ profile_user.display_name or profile_user.username }}</div>
+        <div class="profile-username">@{{ profile_user.username }}</div>
+        <div class="profile-stats">
+          <div class="stat-item" onclick="switchTab('starred')" id="stat-starred">
+            <span class="stat-value" id="starred-count">-</span>
+            <span class="stat-label">收藏</span>
+          </div>
+          <div class="stat-item" onclick="switchTab('notes')" id="stat-notes">
+            <span class="stat-value" id="notes-count">-</span>
+            <span class="stat-label">笔记</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 切换 -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="starred" onclick="switchTab('starred')">
+      <i class="fas fa-star" style="margin-right:4px;font-size:12px"></i> 收藏
+    </button>
+    <button class="tab-btn" data-tab="notes" onclick="switchTab('notes')">
+      <i class="fas fa-sticky-note" style="margin-right:4px;font-size:12px"></i> 笔记
+    </button>
+  </div>
+
+  <!-- 文章列表 -->
+  <div class="items-container" id="items-list">
+    <div class="empty-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>加载中...</p>
+    </div>
+  </div>
+
+  <script>
+    const username = "{{ profile_user.username }}";
+    let currentTab = "starred";
+    let currentOffset = 0;
+    let isLoading = false;
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`/api/user/${username}/profile?tab=${currentTab}&limit=20&offset=${currentOffset}`);
+        if (!res.ok) throw new Error("Failed to load profile");
+        const data = await res.json();
+
+        document.getElementById("starred-count").textContent = data.starred_count;
+        document.getElementById("notes-count").textContent = data.notes_count;
+
+        renderItems(data);
+      } catch (e) {
+        document.getElementById("items-list").innerHTML =
+          '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>加载失败</p></div>';
+      }
+    }
+
+    function renderItems(data) {
+      const container = document.getElementById("items-list");
+      const items = data.items || [];
+
+      if (items.length === 0 && currentOffset === 0) {
+        const emptyIcon = currentTab === "starred" ? "fa-star" : "fa-sticky-note";
+        const emptyText = currentTab === "starred" ? "暂无收藏文章" : "暂无笔记";
+        container.innerHTML = `<div class="empty-state"><i class="fas ${emptyIcon}"></i><p>${emptyText}</p></div>`;
+        return;
+      }
+
+      let html = currentOffset === 0 ? "" : container.innerHTML.replace(/<div class="load-more[\s\S]*?<\/div>\s*$/, "");
+
+      items.forEach(item => {
+        const timeStr = item.created_on_time ? new Date(item.created_on_time * 1000).toLocaleDateString("zh-CN") : "";
+        html += `
+          <a class="item-card" href="${item.link || '#'}" target="_blank" rel="noopener">
+            <div class="item-title">${escapeHtml(item.title || "无标题")}</div>
+            <div class="item-meta">
+              ${item.feed_icon ? `<img src="${item.feed_icon}" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'" />` : ''}
+              <span class="feed-title">${escapeHtml(item.feed_title || "")}</span>
+              ${item.author ? `<span>· ${escapeHtml(item.author)}</span>` : ''}
+              ${timeStr ? `<span>· ${timeStr}</span>` : ''}
+            </div>
+            ${item.note && currentTab === "notes" ? renderNoteCard(item.note) : ''}
+          </a>`;
+      });
+
+      // 加载更多
+      if (currentOffset + items.length < data.total) {
+        html += `<div class="load-more"><button onclick="loadMore()">加载更多</button></div>`;
+      }
+
+      container.innerHTML = html;
+      isLoading = false;
+    }
+
+    function switchTab(tab) {
+      if (tab === currentTab && currentOffset === 0) return;
+      currentTab = tab;
+      currentOffset = 0;
+
+      // 更新 tab 样式
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+
+      loadProfile();
+    }
+
+    function loadMore() {
+      currentOffset += 20;
+      loadProfile();
+    }
+
+    function renderNoteCard(noteStr) {
+      try {
+        const notes = JSON.parse(noteStr);
+        if (!Array.isArray(notes) || notes.length === 0) return "";
+        
+        // 取最新的笔记
+        const n = notes[notes.length - 1];
+        if (!n.note && !n.text) return "";
+        
+        return `
+          <div class="note-card">
+            ${n.note ? `<div class="note-my-comment"><i class="fas fa-comment"></i>${escapeHtml(n.note)}</div>` : ""}
+            ${n.text ? `<blockquote class="note-quote">${escapeHtml(n.text)}</blockquote>` : ""}
+          </div>`;
+      } catch (e) {
+        // 如果解析失败，当作纯文本显示
+        return `<div class="note-card"><div class="note-my-comment"><i class="fas fa-comment"></i>${escapeHtml(noteStr)}</div></div>`;
+      }
+    }
+
+    function renderNoteCard(noteStr) {
+      try {
+        const notes = JSON.parse(noteStr);
+        if (!Array.isArray(notes) || notes.length === 0) return "";
+        
+        // 取最新的笔记
+        const n = notes[notes.length - 1];
+        if (!n.note && !n.text) return "";
+        
+        return `
+          <div class="note-card">
+            ${n.note ? `<div class="note-my-comment"><i class="fas fa-comment"></i>${escapeHtml(n.note)}</div>` : ""}
+            ${n.text ? `<blockquote class="note-quote">${escapeHtml(n.text)}</blockquote>` : ""}
+          </div>`;
+      } catch (e) {
+        // 如果解析失败，当作纯文本显示
+        return `<div class="note-card"><div class="note-my-comment"><i class="fas fa-comment"></i>${escapeHtml(noteStr)}</div></div>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ── 主题切换 ──
+    function applyTheme() {
+      const theme = localStorage.getItem("rss_theme") || "light";
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(theme);
+      const btn = document.getElementById("theme-btn");
+      if (btn) btn.innerHTML = theme === "light" ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+    }
+    applyTheme();
+
+    document.getElementById("theme-btn").addEventListener("click", () => {
+      const cur = localStorage.getItem("rss_theme") || "light";
+      localStorage.setItem("rss_theme", cur === "dark" ? "light" : "dark");
+      applyTheme();
+    });
+
+    // ── 注销登录 ──    // 初始加载
+    loadProfile();
+  </script>
+</body>
+</html>
