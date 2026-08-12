@@ -1598,6 +1598,39 @@ mark.annotation:hover::after { opacity: 1; }
 }
 .settings-toggle-btn:hover { border-color: var(--primary); }
 
+/* ── AI设置 Tab（摘要总结 / 语音合成）── */
+.ai-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin: 4px 0 10px;
+  background: var(--surface2);
+  border-radius: 8px;
+}
+.ai-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.ai-tab:hover { color: var(--text2); }
+.ai-tab.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  font-weight: 600;
+}
+
 /* ── Settings Modal ── */
   .settings-modal { flex-direction: column; max-width: 92vw; }
   .settings-nav {

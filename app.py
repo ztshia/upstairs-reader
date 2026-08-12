@@ -47,7 +47,10 @@ def traditional_to_simplified(text):
 # Resolve DB path relative to this script file (works even when cwd differs from script dir)
 def _get_script_dir():
     return os.path.dirname(os.path.abspath(inspect.getfile(sys.modules[__name__])))
-DB_NAME = os.environ.get("DB_PATH", os.path.join(_get_script_dir(), "rss.db"))
+# 默认数据库放在 data/ 目录（Docker 场景由 DB_PATH=/data/rss.db 环境变量覆盖）
+_DATA_DIR = os.path.join(_get_script_dir(), "data")
+os.makedirs(_DATA_DIR, exist_ok=True)
+DB_NAME = os.environ.get("DB_PATH", os.path.join(_DATA_DIR, "rss.db"))
 app.config["DATABASE"] = DB_NAME
 
 # ── 工具函数 ────────────────────────────────────────────────────
@@ -152,6 +155,7 @@ def init_db():
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             url         TEXT    NOT NULL UNIQUE,
             title       TEXT,
+            custom_title TEXT,
             description TEXT,
             icon_url    TEXT,
             site_url    TEXT,
@@ -204,7 +208,7 @@ def init_db():
     """)
     
     # 插入默认配置：0 为关闭注册，1 为开放注册
-    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('allow_registration', '0')")
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('allow_registration', '1')")
     
     # AI总结功能默认配置
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('ai_enabled', '0')")
@@ -214,6 +218,12 @@ def init_db():
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('ai_min_length', '500')")
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('ai_provider', 'aliyun')")
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('ai_providers_json', '{}')")
+
+    # TTS 语音合成配置（小米 MiMo，可在 AI 设置 → 语音合成 中修改）
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_enabled', '1')")
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_api_url', '')")
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_api_key', '')")
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_model', 'mimo-v2.5-tts')")
     # 迁移：给旧表添加 site_url / created_on_time 列
     try:
         db.execute("ALTER TABLE feeds ADD COLUMN site_url TEXT")
@@ -233,6 +243,12 @@ def init_db():
         pass  # 列已存在
     try:
         db.execute("ALTER TABLE users ADD COLUMN open_registration INTEGER DEFAULT 0")
+    except Exception:
+        pass  # 列已存在
+    
+    # 迁移：给旧表添加 custom_title 列
+    try:
+        db.execute("ALTER TABLE feeds ADD COLUMN custom_title TEXT")
     except Exception:
         pass  # 列已存在
     
@@ -306,15 +322,12 @@ def _ensure_user_item(db, user_id, item_id):
     )
 
 
-<<<<<<< HEAD
-
 def _is_admin(db, user_id):
     """检查是否管理员（第一个注册的用户即为管理员）"""
     first_user = db.execute("SELECT id FROM users ORDER BY id ASC LIMIT 1").fetchone()
     return first_user and first_user[0] == user_id
 
-=======
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
+
 def _extract_favicon_from_page(url):
     """从网站首页 HTML 的 <link rel="icon"> 提取真实 favicon URL"""
     try:
@@ -354,7 +367,6 @@ def _build_content(entry):
     return content
 
 
-<<<<<<< HEAD
 def _normalize_guid(guid: str) -> str:
     """规范化 GUID，去重别名域名等造成的假差异"""
     g = html.unescape(guid)
@@ -363,8 +375,6 @@ def _normalize_guid(guid: str) -> str:
     return g
 
 
-=======
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
 def fetch_feed(url: str) -> dict:
     """抓取并解析 RSS/Atom，返回 feed 元信息和条目列表"""
     headers = {
@@ -1105,17 +1115,11 @@ def login():
     ).fetchone()
     if not user:
         return jsonify({"error": "用户名或密码错误"}), 401
-<<<<<<< HEAD
     is_admin = bool(_is_admin(db, user["id"]))
     return jsonify({"ok": True, "api_key": user["api_key"], "username": user["username"],
                          "display_name": user["display_name"] or user["username"],
                          "avatar": user["avatar"] or "",
                          "is_admin": is_admin})
-=======
-    return jsonify({"ok": True, "api_key": user["api_key"], "username": user["username"],
-                         "display_name": user["display_name"] or user["username"],
-                         "avatar": user["avatar"] or ""})
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
 
 
 
@@ -1174,22 +1178,13 @@ def get_registration_setting():
 
 @app.route("/api/settings/registration", methods=["PUT"])
 def update_registration_setting():
-<<<<<<< HEAD
-    """修改注册开放状态（需要管理员权限）"""
-=======
-    """修改注册开放状态（仅限 zhengtu 账号）"""
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
     user_id = _current_user_id()
     if not user_id:
         return jsonify({"error": "未登录"}), 401
 
     db = get_db()
     user = db.execute("SELECT username FROM users WHERE id=?", (user_id,)).fetchone()
-<<<<<<< HEAD
     if not _is_admin(db, user_id):
-=======
-    if not user or user["username"] != "zhengtu":
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
         return jsonify({"error": "无权限，仅管理员可修改"}), 403
 
     allow = request.json.get("allow", False)
@@ -1203,43 +1198,36 @@ def update_registration_setting():
 
 @app.route("/api/settings/ai", methods=["GET"])
 def get_ai_settings():
-    """获取AI总结设置"""
+    """获取AI总结 / 语音合成设置"""
     db = get_db()
-    keys = ['ai_enabled', 'ai_api_url', 'ai_api_key', 'ai_model', 'ai_min_length', 'ai_provider', 'ai_providers_json']
+    keys = ['ai_enabled', 'ai_api_url', 'ai_api_key', 'ai_model', 'ai_min_length', 'ai_provider', 'ai_providers_json',
+            'tts_enabled', 'tts_api_url', 'tts_api_key', 'tts_model']
     settings = {}
     for key in keys:
         row = db.execute("SELECT value FROM site_settings WHERE key=?", (key,)).fetchone()
         settings[key] = row[0] if row else ''
     # 不返回完整的API key，只返回掩码版本
-    if settings.get('ai_api_key'):
-        key = settings['ai_api_key']
-        if len(key) > 8:
-            settings['ai_api_key_masked'] = key[:4] + '****' + key[-4:]
+    for k in ('ai_api_key', 'tts_api_key'):
+        if settings.get(k):
+            key = settings[k]
+            if len(key) > 8:
+                settings[k + '_masked'] = key[:4] + '****' + key[-4:]
+            else:
+                settings[k + '_masked'] = '****'
         else:
-            settings['ai_api_key_masked'] = '****'
-    else:
-        settings['ai_api_key_masked'] = ''
+            settings[k + '_masked'] = ''
     return jsonify(settings)
 
 
 @app.route("/api/settings/ai", methods=["PUT"])
 def update_ai_settings():
-<<<<<<< HEAD
-    """修改AI总结设置（需要管理员权限）"""
-=======
-    """修改AI总结设置（仅限 zhengtu 账号）"""
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
     user_id = _current_user_id()
     if not user_id:
         return jsonify({"error": "未登录"}), 401
 
     db = get_db()
     user = db.execute("SELECT username FROM users WHERE id=?", (user_id,)).fetchone()
-<<<<<<< HEAD
     if not _is_admin(db, user_id):
-=======
-    if not user or user["username"] != "zhengtu":
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
         return jsonify({"error": "无权限，仅管理员可修改"}), 403
 
     data = request.json or {}
@@ -1272,11 +1260,22 @@ def update_ai_settings():
     # 同时更新旧字段保持兼容（当前激活的厂商配置）
     if 'ai_api_url' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='ai_api_url'", (data['ai_api_url'],))
-    if 'ai_api_key' in data and not data['ai_api_key'].startswith('****'):
+    if 'ai_api_key' in data and '****' not in data['ai_api_key']:
         db.execute("UPDATE site_settings SET value=? WHERE key='ai_api_key'", (data['ai_api_key'],))
     if 'ai_model' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='ai_model'", (data['ai_model'],))
-    
+
+    # ── 语音合成（TTS）配置 ──
+    if 'tts_enabled' in data:
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_enabled'",
+                   ('1' if data['tts_enabled'] else '0',))
+    if 'tts_api_url' in data:
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_url'", (data['tts_api_url'],))
+    if 'tts_api_key' in data and '****' not in data['tts_api_key']:
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_key'", (data['tts_api_key'],))
+    if 'tts_model' in data:
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_model'", (data['tts_model'],))
+
     db.commit()
     return jsonify({"ok": True})
 
@@ -1290,11 +1289,7 @@ def test_ai_connection():
 
     db = get_db()
     user = db.execute("SELECT username FROM users WHERE id=?", (user_id,)).fetchone()
-<<<<<<< HEAD
     if not _is_admin(db, user_id):
-=======
-    if not user or user["username"] != "zhengtu":
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
         return jsonify({"error": "无权限，仅管理员可测试"}), 403
 
     # 获取当前设置
@@ -1340,6 +1335,73 @@ def test_ai_connection():
             return jsonify({"ok": True, "message": "连接成功"})
         else:
             return jsonify({"ok": False, "error": f"API返回错误: {test_response.status_code}"}), 400
+    except requests.exceptions.Timeout:
+        return jsonify({"ok": False, "error": "连接超时"}), 400
+    except requests.exceptions.ConnectionError:
+        return jsonify({"ok": False, "error": "无法连接到API地址"}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/settings/tts/test", methods=["POST"])
+def test_tts_connection():
+    """测试 TTS 语音合成连接是否正常（小米 MiMo 格式）"""
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"error": "未登录"}), 401
+
+    db = get_db()
+    user = db.execute("SELECT username FROM users WHERE id=?", (user_id,)).fetchone()
+    if not _is_admin(db, user_id):
+        return jsonify({"error": "无权限，仅管理员可测试"}), 403
+
+    # 获取当前已保存的 TTS 配置
+    api_url_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_url'").fetchone()
+    api_key_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_key'").fetchone()
+    model_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_model'").fetchone()
+
+    api_url = api_url_row[0] if api_url_row else ''
+    api_key = api_key_row[0] if api_key_row else ''
+    model   = model_row[0] if model_row else ''
+
+    # 如果请求中提供了新的设置，使用新设置测试（不落库）
+    data = request.json or {}
+    if data.get('api_url'):
+        api_url = data['api_url']
+    if data.get('api_key') and not data['api_key'].startswith('****'):
+        api_key = data['api_key']
+    if data.get('model'):
+        model = data['model']
+
+    if not api_url or not api_key or not model:
+        return jsonify({"ok": False, "error": "请填写完整的语音合成设置"}), 400
+
+    # 发送测试请求（与 tts_speak 相同的调用格式）
+    try:
+        r = requests.post(
+            _tts_endpoint(api_url),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "user", "content": "请朗读。"},
+                    {"role": "assistant", "content": "你好，这是一次语音合成连接测试。"}
+                ]
+            },
+            timeout=30
+        )
+        if r.status_code != 200:
+            return jsonify({"ok": False, "error": f"API返回错误: {r.status_code} {r.text[:200]}"}), 400
+        data = r.json()
+        audio_b64 = data["choices"][0]["message"]["audio"]["data"]
+        if not audio_b64:
+            return jsonify({"ok": False, "error": "响应中未包含音频数据"}), 400
+        return jsonify({"ok": True, "message": "连接成功"})
+    except (KeyError, IndexError, TypeError):
+        return jsonify({"ok": False, "error": "响应格式异常，请确认 API 地址与模型是否正确"}), 400
     except requests.exceptions.Timeout:
         return jsonify({"ok": False, "error": "连接超时"}), 400
     except requests.exceptions.ConnectionError:
@@ -1491,6 +1553,16 @@ def summarize_article(item_id):
     return jsonify({"ok": True, "display_name": display_name, "avatar": avatar})
 
 
+def _tts_endpoint(api_url):
+    """归一化 TTS API 地址：兼容完整 /chat/completions 地址或 API 根地址"""
+    url = (api_url or "").rstrip("/")
+    if not url:
+        return ""
+    if url.endswith("/chat/completions"):
+        return url
+    return url + "/chat/completions"
+
+
 @app.route("/api/tts/speak", methods=["GET", "POST"])
 def tts_speak():
     """TTS 语音合成（无需登录，RSS 阅读器本身已有登录保护）"""
@@ -1513,15 +1585,21 @@ def tts_speak():
         logger.error(f"TTS parse error: {e}")
         return str(e), 500
 
-    # 取 TTS 配置（小米 MiMo）
+    # 取 TTS 配置（小米 MiMo，管理员在 AI 设置 → 语音合成 中配置）
     try:
         db = get_db()
+        enabled_row = db.execute("SELECT value FROM site_settings WHERE key='tts_enabled'").fetchone()
         api_key_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_key'").fetchone()
         api_url_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_url'").fetchone()
+        model_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_model'").fetchone()
         logger.info(f"DB query done: key_exists={bool(api_key_row)}, url_exists={bool(api_url_row)}")
+        if enabled_row and enabled_row[0] == '0':
+            logger.error("TTS 未开启")
+            return "语音合成未开启，请在设置中启用", 400
         if not api_key_row or not api_key_row[0]:
             logger.error("TTS API Key 未配置")
             return "TTS API Key 未配置，请在设置中填写", 400
+        tts_model = (model_row[0] if model_row and model_row[0] else 'mimo-v2.5-tts')
     except Exception as e:
         logger.error(f"TTS DB error: {type(e).__name__}: {e}")
         return str(e), 500
@@ -1532,13 +1610,13 @@ def tts_speak():
         # 小米 MiMo TTS 通过 chat/completions 调用，audio 在 message 中
         logger.info(f"Calling MiMo API: url={api_url_row[0]}, key_len={len(api_key_row[0])}, text_len={len(text)}")
         r = requests.post(
-            api_url_row[0].rstrip("/") + "/chat/completions",
+            _tts_endpoint(api_url_row[0]),
             headers={
                 "Authorization": f"Bearer {api_key_row[0]}",
                 "Content-Type": "application/json"
             },
             json={
-                "model": "mimo-v2.5-tts",
+                "model": tts_model,
                 "messages": [
                     {"role": "user", "content": "请朗读。"},
                     {"role": "assistant", "content": text}
@@ -1647,19 +1725,22 @@ def _do_tts_for_item(item_id, summary_text=None):
             return
         summary_text = row[0]
 
+    enabled_row = db.execute("SELECT value FROM site_settings WHERE key='tts_enabled'").fetchone()
     api_key_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_key'").fetchone()
     api_url_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_url'").fetchone()
-    if not api_key_row or not api_key_row[0] or not api_url_row or not api_url_row[0]:
-        logger.error(f"[TTS] API not configured for item {item_id}")
+    model_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_model'").fetchone()
+    if (enabled_row and enabled_row[0] == '0') or not api_key_row or not api_key_row[0] or not api_url_row or not api_url_row[0]:
+        logger.error(f"[TTS] API not configured or disabled for item {item_id}")
         db.execute("UPDATE article_summaries SET audio_status='error' WHERE item_id=?", (item_id,))
         db.commit()
         return
+    tts_model = (model_row[0] if model_row and model_row[0] else 'mimo-v2.5-tts')
 
     try:
         r = requests.post(
-            api_url_row[0].rstrip("/") + "/chat/completions",
+            _tts_endpoint(api_url_row[0]),
             headers={"Authorization": f"Bearer {api_key_row[0]}", "Content-Type": "application/json"},
-            json={"model": "mimo-v2.5-tts",
+            json={"model": tts_model,
                   "messages": [{"role": "user", "content": "请朗读。"}, {"role": "assistant", "content": summary_text}]},
             timeout=60
         )

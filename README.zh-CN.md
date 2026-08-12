@@ -70,7 +70,7 @@ docker compose up -d
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DB_PATH` | `rss.db`（app.py 同级目录） | SQLite 数据库文件路径 |
+| `DB_PATH` | `data/rss.db`（项目 data 目录） | SQLite 数据库文件路径 |
 
 ### 管理员设置
 

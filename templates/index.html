@@ -343,6 +343,12 @@
           </div>
         </div>
         <div id="ai-settings-panel" style="display:none">
+          <!-- 双 Tab:摘要总结 / 语音合成 -->
+          <div class="ai-tabs">
+            <button type="button" class="ai-tab active" data-tab="summary" onclick="switchAiTab('summary')"><i class="fas fa-file-lines"></i> <span data-i18n="ai_tab_summary">摘要总结</span></button>
+            <button type="button" class="ai-tab" data-tab="tts" onclick="switchAiTab('tts')"><i class="fas fa-volume-high"></i> <span data-i18n="ai_tab_tts">语音合成</span></button>
+          </div>
+          <div id="ai-tabpane-summary">
           <div class="settings-section">
             <label class="settings-label"><i class="fas fa-link"></i> <span data-i18n="api_url_label">API接口地址</span></label>
             <div class="provider-select-wrap">
@@ -391,6 +397,45 @@
             <button id="settings-ai-test" class="settings-btn-secondary" style="width:100%" onclick="testAiConnection()"><i class="fas fa-plug"></i> <span data-i18n="test_connection">测试连接</span></button>
             <div id="ai-test-result" style="font-size:12px;margin-top:8px;display:none"></div>
           </div>
+          </div>
+          <!-- 语音合成 Tab -->
+          <div id="ai-tabpane-tts" style="display:none">
+            <div class="settings-section">
+              <div class="settings-row">
+                <span class="settings-row-label"><i class="fas fa-volume-high"></i> <span data-i18n="tts_label">语音合成</span></span>
+                <button id="settings-tts-toggle" class="settings-toggle-btn" onclick="handleTtsToggle()">加载中...</button>
+              </div>
+            </div>
+            <div id="tts-settings-form" style="display:none">
+              <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-link"></i> <span data-i18n="api_url_label">API接口地址</span></label>
+                <div class="provider-select-wrap">
+                  <select id="settings-tts-provider" onchange="applyTtsProvider()">
+                    <option value="mimo" data-url="https://api.xiaomimimo.com/v1/chat/completions" data-i18n="tts_provider_mimo">小米 MiMo</option>
+                    <option value="openai" data-url="https://api.openai.com/v1/chat/completions" data-i18n="tts_provider_openai">OpenAI</option>
+                    <option value="custom" data-i18n="provider_custom">自定义</option>
+                  </select>
+                  <input id="settings-tts-url" type="text" placeholder="https://api.xiaomimimo.com/v1/chat/completions" data-i18n-placeholder="tts_api_url_ph" />
+                </div>
+                <div style="font-size:11px;color:var(--text3);margin-top:4px" data-i18n="tts_api_url_hint">支持填写完整 /chat/completions 地址，或 API 根地址（自动拼接）</div>
+              </div>
+              <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-key"></i> <span data-i18n="api_key_label">API Key</span></label>
+                <div class="key-input-wrap">
+                  <input id="settings-tts-key" type="password" class="settings-input" placeholder="..." data-i18n-placeholder="api_key_ph" />
+                  <button type="button" class="key-toggle-btn" onclick="toggleKeyVisibility('settings-tts-key')" title="显示/隐藏"><i class="fas fa-eye"></i></button>
+                </div>
+              </div>
+              <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-cube"></i> <span data-i18n="model_name_label">模型名称</span></label>
+                <input id="settings-tts-model" type="text" class="settings-input" style="margin-top:8px" placeholder="mimo-v2.5-tts" data-i18n-placeholder="tts_model_ph" />
+              </div>
+              <div class="settings-section">
+                <button id="settings-tts-test" class="settings-btn-secondary" style="width:100%" onclick="testTtsConnection()"><i class="fas fa-plug"></i> <span data-i18n="test_connection">测试连接</span></button>
+                <div id="tts-test-result" style="font-size:12px;margin-top:8px;display:none"></div>
+              </div>
+            </div>
+          </div>
           <div class="settings-actions">
             <button id="settings-ai-cancel" class="settings-btn-secondary" data-i18n="cancel">取消</button>
             <button id="settings-ai-save" class="settings-btn-primary" data-i18n="save">保存</button>
@@ -413,7 +458,8 @@ const state = {
   theme: localStorage.getItem("rss_theme") || "light",
   lang: localStorage.getItem("rss_lang") || "zh-Hans",
   currentItemIndex: -1,
-  aiSettings: { enabled: false, minLength: 500 }
+  aiSettings: { enabled: false, minLength: 500 },
+  ttsSettings: { enabled: false }
 };
 
 const API = (p) => `/api${p}`;
@@ -547,6 +593,9 @@ const I18N = {
     opml_done: n => `導入完成: 新增 ${n} 個訂閱`, opml_skipped: n => `, ${n} 個已跳過`, opml_error: e => `錯誤: ${e}`,
     toc: "本文導覽", hide: "隱藏", show_toc: "顯示大綱",
     ai_settings: "AI設置", ai_summary_label: "AI總結", api_url_label: "API接口地址", api_key_label: "API Key",
+    ai_tab_summary: "摘要總結", ai_tab_tts: "語音合成", tts_label: "語音合成",
+    tts_api_url_ph: "https://api.xiaomimimo.com/v1/chat/completions", tts_api_url_hint: "支持填寫完整 /chat/completions 地址，或 API 根地址（自動拼接）", tts_model_ph: "mimo-v2.5-tts",
+    tts_provider_mimo: "小米 MiMo", tts_provider_openai: "OpenAI",
     model_name_label: "模型名稱", min_length_label: "字數閾值", min_unlimited: "不限制", min_500: "500字", min_800: "800字", min_1000: "1000字",
     min_2000: "2000字", min_3000: "3000字", min_length_hint: "僅對超過此字數的文章顯示AI總結按鈕",
     test_connection: "測試連接", api_url_ph: "https://api.openai.com/v1/chat/completions",
@@ -595,6 +644,9 @@ const I18N = {
     opml_done: n => `导入完成: 新增 ${n} 个订阅`, opml_skipped: n => `, ${n} 个已跳过`, opml_error: e => `错误: ${e}`,
     toc: "本文导览", hide: "隐藏", show_toc: "显示大纲",
     ai_settings: "AI设置", ai_summary_label: "AI总结", api_url_label: "API接口地址", api_key_label: "API Key",
+    ai_tab_summary: "摘要总结", ai_tab_tts: "语音合成", tts_label: "语音合成",
+    tts_api_url_ph: "https://api.xiaomimimo.com/v1/chat/completions", tts_api_url_hint: "支持填写完整 /chat/completions 地址，或 API 根地址（自动拼接）", tts_model_ph: "mimo-v2.5-tts",
+    tts_provider_mimo: "小米 MiMo", tts_provider_openai: "OpenAI",
     model_name_label: "模型名称", min_length_label: "字数阈值", min_unlimited: "不限制", min_500: "500字", min_800: "800字", min_1000: "1000字",
     min_2000: "2000字", min_3000: "3000字", min_length_hint: "仅对超过此字数的文章显示AI总结按钮",
     test_connection: "测试连接", api_url_ph: "https://api.openai.com/v1/chat/completions",
@@ -659,13 +711,8 @@ async function openSettings(panel) {
   const tb = $("#settings-theme-toggle"); if (tb) tb.textContent = t("theme_" + state.theme);
   const lb = $("#settings-lang-toggle"); if (lb) lb.textContent = state.lang === "zh-Hans" ? t("lang_hans") : t("lang_hant");
   await applySettingsInit();
-<<<<<<< HEAD
-  // 管理员专属逻辑
+// 管理员专属逻辑
   if (currentUser.is_admin) {
-=======
-  // 管理员(zhengtu)专属逻辑
-  if (currentUser.username === "zhengtu") {
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
     document.getElementById("admin-section").style.display = "block";
     fetchRegistrationSetting();
   } else {
@@ -892,6 +939,7 @@ async function fetchAiSettings() {
       apiUrl: d.ai_api_url,
       model: d.ai_model
     };
+    state.ttsSettings = { enabled: d.tts_enabled === '1' };
     btn.textContent = d.ai_enabled === '1' ? t("on") : t("off");
     btn.dataset.enabled = d.ai_enabled;
     // 填充表单
@@ -927,6 +975,32 @@ async function fetchAiSettings() {
     // 显示/隐藏配置面板
     const panel = document.getElementById("ai-settings-panel");
     if (panel) panel.style.display = d.ai_enabled === '1' ? 'block' : 'none';
+
+    // 填充 TTS（语音合成）表单
+    const ttsToggleBtn = document.getElementById("settings-tts-toggle");
+    if (ttsToggleBtn) {
+      ttsToggleBtn.textContent = d.tts_enabled === '1' ? t("on") : t("off");
+      ttsToggleBtn.dataset.enabled = d.tts_enabled;
+    }
+    const ttsUrlInput = document.getElementById("settings-tts-url");
+    const ttsKeyInput = document.getElementById("settings-tts-key");
+    const ttsModelInput = document.getElementById("settings-tts-model");
+    if (ttsUrlInput) ttsUrlInput.value = d.tts_api_url || '';
+    if (ttsKeyInput) ttsKeyInput.value = d.tts_api_key_masked || '';
+    if (ttsModelInput) ttsModelInput.value = d.tts_model || 'mimo-v2.5-tts';
+    // 根据已保存的 URL 自动匹配 TTS 服务商
+    const ttsProviderSelect = document.getElementById("settings-tts-provider");
+    if (ttsProviderSelect) {
+      let matched = 'custom';
+      const norm = normalizeTtsUrl(d.tts_api_url);
+      Array.from(ttsProviderSelect.options).forEach(o => {
+        if (o.dataset.url && o.dataset.url === norm) matched = o.value;
+      });
+      ttsProviderSelect.value = matched;
+      applyTtsProvider();
+    }
+    const ttsForm = document.getElementById("tts-settings-form");
+    if (ttsForm) ttsForm.style.display = d.tts_enabled === '1' ? 'block' : 'none';
   } catch(e) {
     btn.textContent = "加载失败";
   }
@@ -950,6 +1024,44 @@ async function handleAiToggle() {
       btn.dataset.enabled = newEnabled ? '1' : '0';
       const panel = document.getElementById("ai-settings-panel");
       if (panel) panel.style.display = newEnabled ? 'block' : 'none';
+    } else {
+      alert(d.error || "更新失败");
+      fetchAiSettings();
+    }
+  } catch(e) {
+    alert("网络错误");
+    fetchAiSettings();
+  }
+}
+
+// AI 设置面板 Tab 切换（摘要总结 / 语音合成）
+function switchAiTab(tab) {
+  document.querySelectorAll(".ai-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  const summaryPane = document.getElementById("ai-tabpane-summary");
+  const ttsPane = document.getElementById("ai-tabpane-tts");
+  if (summaryPane) summaryPane.style.display = tab === "summary" ? '' : 'none';
+  if (ttsPane) ttsPane.style.display = tab === "tts" ? '' : 'none';
+}
+
+async function handleTtsToggle() {
+  const btn = document.getElementById("settings-tts-toggle");
+  if (!btn) return;
+  const currentEnabled = btn.dataset.enabled === '1';
+  const newEnabled = !currentEnabled;
+  btn.textContent = "更新中...";
+  try {
+    const res = await authFetch("/settings/ai", {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ tts_enabled: newEnabled })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      btn.textContent = newEnabled ? t("on") : t("off");
+      btn.dataset.enabled = newEnabled ? '1' : '0';
+      state.ttsSettings.enabled = newEnabled;
+      const form = document.getElementById("tts-settings-form");
+      if (form) form.style.display = newEnabled ? 'block' : 'none';
     } else {
       alert(d.error || "更新失败");
       fetchAiSettings();
@@ -999,9 +1111,69 @@ async function testAiConnection() {
   }
 }
 
-function toggleKeyVisibility() {
-  const input = document.getElementById("settings-ai-key");
-  const btn = document.getElementById("toggle-key-btn");
+// 归一化 TTS URL（与后端 _tts_endpoint 保持一致）
+function normalizeTtsUrl(u) {
+  u = (u || '').replace(/\/+$/, '');
+  if (!u) return '';
+  return u.endsWith('/chat/completions') ? u : u + '/chat/completions';
+}
+
+// 选择 TTS 服务商：预设地址自动填充并锁定，自定义可编辑
+function applyTtsProvider() {
+  const sel = document.getElementById("settings-tts-provider");
+  const urlInput = document.getElementById("settings-tts-url");
+  if (!sel || !urlInput) return;
+  const opt = sel.options[sel.selectedIndex];
+  if (sel.value === 'custom') {
+    urlInput.readOnly = false;
+  } else if (opt && opt.dataset.url) {
+    urlInput.value = opt.dataset.url;
+    urlInput.readOnly = true;
+  }
+}
+
+async function testTtsConnection() {
+  const btn = document.getElementById("settings-tts-test");
+  const resultEl = document.getElementById("tts-test-result");
+  if (!btn) return;
+
+  // 获取当前表单值
+  const url = document.getElementById("settings-tts-url")?.value || '';
+  const key = document.getElementById("settings-tts-key")?.value || '';
+  const model = document.getElementById("settings-tts-model")?.value || 'mimo-v2.5-tts';
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t("test_connection");
+  resultEl.style.display = 'block';
+  resultEl.style.color = 'var(--text2)';
+  resultEl.textContent = '...';
+
+  try {
+    const res = await authFetch("/settings/tts/test", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ api_url: url, api_key: key, model: model })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      resultEl.style.color = 'var(--primary)';
+      resultEl.textContent = t("test_success");
+    } else {
+      resultEl.style.color = 'var(--danger)';
+      resultEl.textContent = d.error || t("test_failed");
+    }
+  } catch(e) {
+    resultEl.style.color = 'var(--danger)';
+    resultEl.textContent = t("network_error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-plug"></i> ' + t("test_connection");
+  }
+}
+
+function toggleKeyVisibility(inputId = "settings-ai-key") {
+  const input = document.getElementById(inputId);
+  const btn = input ? input.closest(".key-input-wrap")?.querySelector(".key-toggle-btn") : null;
   if (!input || !btn) return;
   if (input.type === "password") {
     input.type = "text";
@@ -1021,7 +1193,12 @@ async function saveAiSettings() {
   const minLength = document.getElementById("settings-ai-minlength")?.value || '500';
   const providerSelect = document.getElementById("settings-ai-provider");
   const provider = providerSelect ? providerSelect.value : 'aliyun';
-  
+  // TTS（语音合成）配置
+  const ttsToggleBtn = document.getElementById("settings-tts-toggle");
+  const ttsUrl = document.getElementById("settings-tts-url")?.value || '';
+  const ttsKey = document.getElementById("settings-tts-key")?.value || '';
+  const ttsModel = document.getElementById("settings-tts-model")?.value || 'mimo-v2.5-tts';
+
   try {
     const res = await authFetch("/settings/ai", {
       method: "PUT",
@@ -1036,7 +1213,11 @@ async function saveAiSettings() {
         ai_api_url: url,
         ai_api_key: key,
         ai_model: model,
-        ai_min_length: minLength
+        ai_min_length: minLength,
+        tts_enabled: ttsToggleBtn ? ttsToggleBtn.dataset.enabled === '1' : true,
+        tts_api_url: ttsUrl,
+        tts_api_key: ttsKey,
+        tts_model: ttsModel
       })
     });
     const d = await res.json();
@@ -1415,7 +1596,7 @@ async function showAiSummaryFromDetail() {
       </div>`;
       // 生成摘要后显示 TTS 按钮
       const ttsBtn2 = document.getElementById("detail-tts-btn");
-      if (ttsBtn2) ttsBtn2.style.display = (currentUser && state.aiSettings && state.aiSettings.enabled) ? 'inline-flex' : 'none';
+      if (ttsBtn2) ttsBtn2.style.display = (currentUser && state.aiSettings && state.aiSettings.enabled && state.ttsSettings && state.ttsSettings.enabled) ? 'inline-flex' : 'none';
     } else {
       summaryContainer.innerHTML = `<div class="ai-summary-box ai-summary-box--err"><i class="fas fa-circle-exclamation"></i> ${esc(d.error || t('test_failed'))}</div>`;
     }
@@ -1570,7 +1751,7 @@ function showDetail(idx) {
   // TTS 按钮：有 AI 设置且有摘要时才显示
   const ttsBtn = document.getElementById("detail-tts-btn");
   if (ttsBtn) {
-    ttsBtn.style.display = (currentUser && state.aiSettings.enabled && currentSummaryText) ? 'inline-flex' : 'none';
+    ttsBtn.style.display = (currentUser && state.aiSettings.enabled && state.ttsSettings && state.ttsSettings.enabled && currentSummaryText) ? 'inline-flex' : 'none';
   }
   
   
@@ -1959,7 +2140,7 @@ function renderList(grid, append) {
     let audioBtn = "";
     if (state.activeFeed === "starred") {
       const contentLen = (item.content || item.summary || '').length;
-      const meetsMinLen = currentUser && state.aiSettings && state.aiSettings.enabled && contentLen >= state.aiSettings.minLength;
+      const meetsMinLen = currentUser && state.aiSettings && state.aiSettings.enabled && state.ttsSettings && state.ttsSettings.enabled && contentLen >= state.aiSettings.minLength;
       if (meetsMinLen) {
         const as = item.audio_status;
         if (as === "pending") {

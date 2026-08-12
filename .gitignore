@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Database
 *.db
 *.db-shm
@@ -32,10 +31,3 @@ static/avatars/*
 
 # Test data
 test_*.json
-=======
-rss.db-shm
-rss.db
-rss.db
-rss.db-wal
-rss.db
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6

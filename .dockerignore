@@ -6,3 +6,6 @@ __pycache__/
 .git/
 .env
 .DS_Store
+data/
+audio_cache/
+static/avatars/*

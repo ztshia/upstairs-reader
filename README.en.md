@@ -87,7 +87,7 @@ The app will be available at **http://localhost:5321**. Data persists in the `./
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DB_PATH` | `rss.db` (next to app.py) | SQLite database file path |
+| `DB_PATH` | `data/rss.db` (inside the project data dir) | SQLite database file path |
 
 ### Admin Settings
 
