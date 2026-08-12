@@ -21,6 +21,9 @@ Thumbs.db
 .env
 *.log
 
+# WorkBuddy workspace data
+.workbuddy/
+
 # Audio cache
 audio_cache/*.wav
 audio_cache/*.mp3
