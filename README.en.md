@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Upstairs Reader
 
 <p align="center">
@@ -28,8 +27,26 @@
 - **Personal profile pages** — Public pages showing starred articles and notes per user
 - **Dark / Light themes** — Glass-morphism UI with system theme detection
 - **Traditional / Simplified Chinese** — Built-in zh-Hant ↔ zh-Hans toggle
-- **Docker support** — One-command deployment with `docker compose up`
+- **Docker support** — One-command deployment with `docker run` (multi-arch: amd64 / arm64)
 - **Fever API compatible** — Works with RSS clients that support the Fever API protocol
+
+## Screenshots
+
+<div align="center">
+
+**Main view (Light theme)**
+
+![Main view](screenshot/首页.png)
+
+**Article detail + AI summary (Dark theme)**
+
+![Detail dark](screenshot/详情页暗黑模式.png)
+
+**Newspaper view + TTS narration (Audio View)**
+
+![Newspaper view](screenshot/声闻页面.png)
+
+</div>
 
 ## Tech Stack
 
@@ -47,39 +64,39 @@
 ### Local Development
 
 ```bash
-git clone https://github.com/your-username/upstairs-reader.git
+git clone https://github.com/ztshia/upstairs-reader.git
 cd upstairs-reader
 pip install -r requirements.txt
 python app.py
 ```
 
 Then open **http://localhost:5321**
-=======
-# Upstairs RSS
-
-一个简洁的 RSS 阅读器，支持自托管部署。
-
-## 功能特性
-
-- **RSS 订阅管理**：添加、删除、分组管理 RSS 源
-- **文章阅读**：支持列表/网格视图，已读/未读标记，收藏功能
-- **AI 摘要**：集成大语言模型 API，自动为长文生成摘要（可选开启）
-- **多语言界面**：支持简体中文、繁体中文切换
-- **响应式设计**：适配桌面和移动端
-- **用户系统**：支持多用户，管理员可控制开放注册
-- **自动刷新**：后台定时抓取订阅源更新
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6
 
 > The first registered user automatically becomes the administrator.
 
-<<<<<<< HEAD
-### Docker
+### Docker (Recommended)
+
+Use the Docker Hub image (multi-arch: amd64 / arm64):
+
+```bash
+docker run -d --name upstairs-reader -p 5321:5321 \
+  -v $(pwd)/data:/data \
+  -e DB_PATH=/data/rss.db \
+  ztshia/upstairs-reader:latest
+```
+
+The app will be available at **http://localhost:5321**.
+
+> - The database file `rss.db` lives in `$(pwd)/data` on the host (set by the volume mount + `DB_PATH`; both must match)
+> - The database is initialized automatically on first start; mount `./audio_cache:/app/audio_cache` to persist TTS audio
+> - On Linux servers, fix permission issues with: `mkdir -p data && chown -R 1000:1000 data`
+> - The first registered user automatically becomes the administrator
+
+Or use the bundled docker-compose:
 
 ```bash
 docker compose up -d
 ```
-
-The app will be available at **http://localhost:5321**. Data persists in the `./data` directory.
 
 ## Configuration
 
@@ -214,19 +231,34 @@ upstairs-reader/
 
 ## Deployment
 
-### On a VPS
+### Docker (VPS / Home Server / NAS)
+
+Use the Docker Hub image (multi-arch: amd64 / arm64):
 
 ```bash
-# Clone and start
-git clone https://github.com/your-username/upstairs-reader.git
+docker run -d --name upstairs-reader -p 5321:5321 \
+  -v $(pwd)/data:/data \
+  -e DB_PATH=/data/rss.db \
+  ztshia/upstairs-reader:latest
+```
+
+- Data lives in `$(pwd)/data/rss.db` on the host (the volume mount and `DB_PATH` must match)
+- On Linux servers, fix permission errors with: `mkdir -p data && chown -R 1000:1000 data`
+- Use nginx / Caddy as a reverse proxy, point your domain to `localhost:5321`, then set up HTTPS with Let's Encrypt
+
+Or use the bundled compose:
+
+```bash
+git clone https://github.com/ztshia/upstairs-reader.git
 cd upstairs-reader
 docker compose up -d
-
-# Use nginx/Caddy as reverse proxy
-# Point your domain to localhost:5321
 ```
 
 ### On Synology NAS
+
+Option 1 (Docker): if your NAS supports Docker, pull the image as described above.
+
+Option 2 (Python directly):
 
 ```bash
 # Install Python 3, then:
@@ -252,126 +284,3 @@ MIT License — see [LICENSE](LICENSE) file for details.
 <p align="center">
   Built with ❤️ for people who love reading.
 </p>
-=======
-- 后端：Python + Flask + SQLite
-- 前端：原生 JavaScript + CSS
-- 部署：Docker / Docker Compose
-
-## 安装部署
-
-### 方式一：Docker Compose（推荐）
-
-```bash
-git clone <仓库地址>
-cd upstairs-rss
-docker-compose up -d
-```
-
-服务将在 http://localhost:5321 启动。
-
-### 方式二：手动运行
-
-```bash
-# 安装依赖
-pip install -r requirements.txt
-
-# 启动服务
-python app.py
-```
-
-默认监听 5321 端口。首次启动会自动创建数据库。
-
-### 方式三：群晖 NAS
-
-```bash
-# 如果 SSL 证书报错，使用阿里云镜像
-pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
-
-python app.py
-```
-
-## 初始配置
-
-1. 访问 http://localhost:5321
-2. 使用默认管理员账号登录：
-   - 用户名：`zhengtu`
-   - 密码：（首次启动时控制台会显示或需在数据库中预设）
-3. 在「设置」→「安全设置」中可开启开放注册
-4. 在「设置」→「AI 设置」中配置 API 密钥（可选）
-
-## AI 摘要功能
-
-支持以下服务商：
-- 阿里云（DashScope）
-- 腾讯云
-- 火山引擎
-- 硅基流动
-- 七牛云
-- 自定义 OpenAI 兼容接口
-
-**注意**：AI 摘要为可选功能，不配置不影响 RSS 基础功能使用。
-
-## 数据存储
-
-- 数据库：`rss.db`（SQLite）
-- 头像：`static/avatars/`
-- 建议定期备份 `rss.db` 文件
-
-## 常见问题
-
-**Q: 如何修改端口号？**
-
-修改 `app.py` 底部：
-```python
-app.run(host="0.0.0.0", port=5321, debug=False)
-```
-
-**Q: 数据库损坏怎么办？**
-
-使用 SQLite 恢复：
-```bash
-sqlite3 rss.db ".dump" > backup.sql
-# 重建数据库
-sqlite3 rss_new.db < backup.sql
-```
-
-**Q: 如何备份数据？**
-
-直接复制 `rss.db` 文件即可，SQLite 是单文件数据库。
-
-**Q: AI 摘要显示"字数不足"？**
-
-在 AI 设置中调整「字数阈值」，设为 0 可对所有文章启用摘要。
-
-**Q: 如何切换繁简界面？**
-
-在「设置」→「偏好设置」中选择界面语言。
-
-## 目录结构
-
-```
-upstairs-rss/
-├── app.py              # 主程序
-├── rss.db              # SQLite 数据库
-├── requirements.txt    # Python 依赖
-├── Dockerfile          # Docker 构建
-├── docker-compose.yml  # Docker Compose 配置
-├── templates/          # HTML 模板
-│   └── index.html
-└── static/             # 静态资源
-    ├── index.css
-    ├── favicon.ico
-    ├── logo.png
-    └── avatars/        # 用户头像
-```
-
-## 开发说明
-
-- 数据库迁移：修改 `init_db()` 函数，会自动执行 ALTER TABLE
-- 前端缓存：开发时 CSS/JS 可能缓存，已配置 no-cache 头，或手动加版本号 `?v=xxx`
-- API 文档：查看 `app.py` 中 `/api/` 开头的路由
-
-## License
-
-MIT
->>>>>>> 36e641ef38fda4836716bbe5e7b1c0a137a509b6

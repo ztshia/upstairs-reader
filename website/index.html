@@ -3,448 +3,576 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>上楼阅读器 Upstairs Reader — 自托管的 RSS 阅读器，重新定义阅读体验</title>
-<meta name="description" content="上楼阅读器是一款自托管、多用户的 RSS 阅读器，支持 AI 智能摘要、TTS 语音朗读和报纸式阅读。通过 Docker 一键部署，数据完全由你掌控。">
+<title>階上悦读 Upstairs Reader — 拾级而上，静心阅读 · 自托管 RSS 阅读器</title>
+<meta name="description" content="階上悦读是一款自托管、多用户 RSS 阅读器，支持 AI 智能摘要、TTS 语音朗读与报纸式阅读。Docker 一键部署，数据完全由你掌控。">
+<meta property="og:title" content="階上悦读 Upstairs Reader — 自托管 RSS 阅读器">
+<meta property="og:description" content="自托管、多用户 RSS 阅读器，支持 AI 摘要、TTS 朗读与报纸式阅读。Docker 一键部署。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
 <style>
+/* ── Theme Variables ─────────────────────────────────────── */
+:root {
+  --bg: #0a0a0a; --bg-soft: #111;
+  --surface: rgba(255,255,255,0.015); --surface-hover: rgba(107,142,142,0.025);
+  --border: rgba(255,255,255,0.04); --border-hover: rgba(107,142,142,0.15);
+  --border-strong: rgba(107,142,142,0.35); --border-strong-hover: rgba(107,142,142,0.52);
+  --text: #c8c8c8; --text-heading: #dcdcdc; --text-hero: #ececec;
+  --text-muted: #777; --text-dim: #5a5a5a; --text-faint: #3a3a3a;
+  --accent: #8aaaaa; --accent-dim: #6a7a7a; --accent-faint: #4a5a5a;
+  --accent-bg: rgba(107,142,142,0.06); --accent-bg-hover: rgba(107,142,142,0.12);
+  --accent-border: rgba(107,142,142,0.1); --accent-border-hover: rgba(107,142,142,0.22);
+  --btn-primary-bg: rgba(107,142,142,0.16); --btn-primary-border: rgba(107,142,142,0.36);
+  --btn-primary-hover-bg: rgba(107,142,142,0.26);
+  --btn-secondary-bg: rgba(255,255,255,0.03); --btn-secondary-border: rgba(255,255,255,0.08);
+  --btn-secondary-hover-bg: rgba(255,255,255,0.06); --btn-secondary-hover-border: rgba(255,255,255,0.13);
+  --code-bg: rgba(255,255,255,0.04); --code-color: #a0b0b0;
+  --nav-bg: rgba(10,10,10,0.72); --nav-border: rgba(255,255,255,0.05);
+  --nav-link: #777; --nav-link-hover: #b0c0c0;
+  --nav-cta-bg: rgba(107,142,142,0.12); --nav-cta-border: rgba(107,142,142,0.28);
+  --nav-cta-hover-bg: rgba(107,142,142,0.22); --nav-cta-hover-border: rgba(107,142,142,0.45);
+  --footer-bg: rgba(0,0,0,0.3); --footer-border: rgba(255,255,255,0.04);
+  --footer-link: #5a5a5a; --footer-link-hover: #8aaaaa;
+  --hero-glow: rgba(107,142,142,0.07);
+  --newspaper-bg: linear-gradient(180deg, #141414, #101010);
+  --newspaper-border: rgba(255,255,255,0.06);
+  --newspaper-divider: rgba(255,255,255,0.07);
+  --newspaper-dashed: rgba(255,255,255,0.04);
+  --hamburger-color: #999;
+  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  --accent-rgb: 107,142,142;
+}
+
+[data-theme="light"] {
+  --bg: #f5f4f0; --bg-soft: #eeece8;
+  --surface: rgba(0,0,0,0.02); --surface-hover: rgba(107,142,142,0.03);
+  --border: rgba(0,0,0,0.06); --border-hover: rgba(107,142,142,0.2);
+  --border-strong: rgba(107,142,142,0.4); --border-strong-hover: rgba(107,142,142,0.55);
+  --text: #3a3a3a; --text-heading: #1a1a1a; --text-hero: #111;
+  --text-muted: #6a6a6a; --text-dim: #888; --text-faint: #aaa;
+  --accent: #5a7a7a; --accent-dim: #6a8a8a; --accent-faint: #8aaaaa;
+  --accent-bg: rgba(107,142,142,0.08); --accent-bg-hover: rgba(107,142,142,0.15);
+  --accent-border: rgba(107,142,142,0.15); --accent-border-hover: rgba(107,142,142,0.3);
+  --btn-primary-bg: rgba(107,142,142,0.1); --btn-primary-border: rgba(107,142,142,0.35);
+  --btn-primary-hover-bg: rgba(107,142,142,0.2);
+  --btn-secondary-bg: rgba(0,0,0,0.03); --btn-secondary-border: rgba(0,0,0,0.08);
+  --btn-secondary-hover-bg: rgba(0,0,0,0.06); --btn-secondary-hover-border: rgba(0,0,0,0.14);
+  --code-bg: rgba(0,0,0,0.04); --code-color: #4a6a6a;
+  --nav-bg: rgba(245,244,240,0.85); --nav-border: rgba(0,0,0,0.06);
+  --nav-link: #6a6a6a; --nav-link-hover: #3a5a5a;
+  --nav-cta-bg: rgba(107,142,142,0.1); --nav-cta-border: rgba(107,142,142,0.3);
+  --nav-cta-hover-bg: rgba(107,142,142,0.2); --nav-cta-hover-border: rgba(107,142,142,0.45);
+  --footer-bg: rgba(0,0,0,0.02); --footer-border: rgba(0,0,0,0.06);
+  --footer-link: #6a6a6a; --footer-link-hover: #3a7a7a;
+  --hero-glow: rgba(107,142,142,0.04);
+  --newspaper-bg: #fff; --newspaper-border: rgba(0,0,0,0.06);
+  --newspaper-divider: rgba(0,0,0,0.06);
+  --newspaper-dashed: rgba(0,0,0,0.05);
+  --hamburger-color: #6a6a6a;
+  --noise: none;
+  --btn-secondary-color: #6a6a6a;
+  --btn-secondary-hover-color: #3a3a3a;
+  --nav-cta-color: #4a7a7a;
+  --nav-cta-hover-color: #3a6a6a;
+}
+
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 16px; }
+html { scroll-behavior: smooth; font-size: 16px; scroll-padding-top: 4rem; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  background: #0a0a0a;
-  color: #c8c8c8;
-  line-height: 1.75;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg); color: var(--text);
+  line-height: 1.8; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  transition: background 0.4s, color 0.4s;
 }
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; display: block; }
+:focus-visible { outline: 2px solid rgba(107,142,142,0.6); outline-offset: 2px; border-radius: 2px; }
 
 /* ── Noise overlay ──────────────────────────────────────── */
 body::after {
-  content: "";
-  position: fixed; inset: 0;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9999;
+  content: ""; position: fixed; inset: 0; z-index: 1000;
+  background: var(--noise); pointer-events: none;
 }
+@media (max-width: 768px) { body::after { display: none; } }
+
+/* ── Skip link ──────────────────────────────────────────── */
+.skip-link {
+  position: absolute; top: -100px; left: 1rem; z-index: 2000;
+  background: var(--bg-soft); color: var(--text); padding: 0.5rem 1rem;
+  border-radius: 6px; font-size: 0.85rem;
+}
+.skip-link:focus { top: 0.5rem; }
 
 /* ── Typography ──────────────────────────────────────────── */
 h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.01em; }
-h1 { font-size: clamp(2.6rem, 5.5vw, 4.2rem); line-height: 1.15; }
-h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); letter-spacing: -0.01em; }
-h3 { font-size: 1.05rem; }
-p { color: #888; }
-
+h1 { font-size: clamp(2.6rem, 5.5vw, 4.4rem); line-height: 1.12; letter-spacing: 0.05em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); }
+h3 { font-size: 1.02rem; }
+p { color: var(--text-muted); }
 code {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
-  font-size: 0.85rem;
-  background: rgba(255,255,255,0.04);
-  padding: 0.15em 0.45em;
-  border-radius: 4px;
-  color: #a8b8b8;
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-size: 0.84rem; background: var(--code-bg); color: var(--code-color);
+  padding: 0.15em 0.45em; border-radius: 4px;
 }
 
 /* ── Container ────────────────────────────────────────────── */
-.container {
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
+.container { max-width: 1140px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2.5rem); }
 
 /* ── Navigation ──────────────────────────────────────────── */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: rgba(10,10,10,0.72);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: var(--nav-bg); border-bottom: 1px solid var(--nav-border);
+  transition: background 0.4s;
 }
 .nav-inner {
-  max-width: 1140px; margin: 0 auto; padding: 0 2rem;
-  display: flex; align-items: center; justify-content: space-between;
-  height: 3.6rem;
+  max-width: 1140px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; height: 3.6rem;
 }
+.nav-left { display: flex; align-items: center; gap: 1rem; }
 .nav-logo {
-  font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em;
-  color: #d8d8d8;
-  display: flex; align-items: center; gap: 0.5rem;
+  font-weight: 700; font-size: 1.05rem; letter-spacing: 0.08em;
+  color: var(--text-heading); display: flex; align-items: center; gap: 0.5rem;
 }
-.nav-logo .zh { color: #9baeae; font-size: 0.9rem; font-weight: 500; }
-.nav-links { display: flex; gap: 1.8rem; list-style: none; align-items: center; }
-.nav-links a { font-size: 0.85rem; color: #777; transition: color 0.2s; }
-.nav-links a:hover { color: #b0c0c0; }
+.nav-logo .en { color: var(--accent); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.04em; }
+.nav-links { display: flex; gap: 1.6rem; list-style: none; align-items: center; }
+.nav-links a { font-size: 0.84rem; color: var(--nav-link); transition: color 0.2s; }
+.nav-links a:hover { color: var(--nav-link-hover); }
 .nav-cta {
-  background: rgba(107,142,142,0.12);
-  border: 1px solid rgba(107,142,142,0.28);
-  color: #a8b8b8 !important;
-  padding: 0.4rem 1.1rem;
-  border-radius: 7px;
-  font-size: 0.82rem !important;
-  font-weight: 500;
-  transition: all 0.25s;
+  background: var(--nav-cta-bg); border: 1px solid var(--nav-cta-border);
+  color: var(--accent) !important; padding: 0.4rem 1rem; border-radius: 7px;
+  font-size: 0.81rem !important; font-weight: 500; transition: all 0.25s;
 }
-.nav-cta:hover {
-  background: rgba(107,142,142,0.22);
-  border-color: rgba(107,142,142,0.45);
-  color: #c8d8d8 !important;
+.nav-cta:hover { background: var(--nav-cta-hover-bg); border-color: var(--nav-cta-hover-border); }
+.nav-gh {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--nav-link); transition: color 0.2s, transform 0.2s;
+  padding: 0.2rem;
+}
+.nav-gh:hover { color: var(--nav-link-hover); transform: translateY(-1px); }
+
+/* Theme toggle */
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--nav-link); transition: all 0.2s; padding: 0;
+}
+.theme-toggle:hover { color: var(--nav-link-hover); border-color: var(--border-hover); background: var(--surface); }
+.theme-toggle svg { width: 17px; height: 17px; }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+/* Hamburger */
+.hamburger { display: none; }
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex; flex-direction: column; gap: 5px;
+    cursor: pointer; padding: 4px; background: none; border: none; z-index: 110;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 1.5px;
+    background: var(--hamburger-color); border-radius: 1px;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+  .nav-links {
+    position: fixed; top: 3.6rem; left: 0; right: 0; bottom: 0;
+    flex-direction: column; justify-content: flex-start; gap: 0;
+    padding: 1.5rem; background: var(--bg);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    align-items: flex-start;
+  }
+  .nav-links.open { transform: translateX(0); }
+  .nav-links a { font-size: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); width: 100%; }
+  .nav-links li:last-child { margin-top: 0.5rem; }
+  .nav-cta { display: inline-block; border-bottom: none !important; width: auto !important; }
 }
 
 /* ── Sections ────────────────────────────────────────────── */
-section { padding: 7rem 0; position: relative; }
+section { padding: 6rem 0; position: relative; }
+section:not(:first-of-type) { content-visibility: auto; contain-intrinsic-size: 600px; }
 
 /* ── Hero ────────────────────────────────────────────────── */
 .hero {
-  padding: 11rem 0 9rem;
-  text-align: center;
-  position: relative;
+  padding: 11rem 0 8rem; text-align: center; position: relative; overflow: hidden;
+  content-visibility: visible;
 }
 .hero::before {
-  content: "";
-  position: absolute;
-  top: -250px; left: 50%; transform: translateX(-50%);
-  width: 800px; height: 800px;
-  background: radial-gradient(circle at center, rgba(107,142,142,0.07) 0%, transparent 70%);
+  content: ""; position: absolute;
+  top: -260px; left: 50%; transform: translateX(-50%);
+  width: 860px; height: 860px;
+  background: radial-gradient(circle at center, var(--hero-glow) 0%, transparent 68%);
   pointer-events: none;
 }
-.hero::after {
-  content: "";
-  position: absolute;
-  bottom: -100px; left: 50%; transform: translateX(-50%);
-  width: 500px; height: 300px;
-  background: radial-gradient(ellipse at center, rgba(107,142,142,0.04) 0%, transparent 70%);
-  pointer-events: none;
+.hero h1 { color: var(--text-hero); margin-bottom: 1rem; }
+.hero h1 .accent { color: var(--accent); }
+.hero .kicker { display: block; font-size: clamp(0.92rem, 1.5vw, 1.1rem); font-weight: 400; color: var(--accent-faint); margin-bottom: 0.5rem; letter-spacing: 0.45em; text-indent: 0.45em; }
+.hero .sub { display: block; font-size: clamp(0.98rem, 1.8vw, 1.25rem); font-weight: 400; color: var(--accent-dim); margin-top: 0.5rem; letter-spacing: 0.12em; }
+.hero .tagline { font-size: clamp(0.98rem, 1.8vw, 1.2rem); color: var(--text-muted); max-width: 600px; margin: 1.8rem auto 2.4rem; line-height: 1.9; }
+.hero .tagline .en { display: block; font-size: 0.83rem; color: var(--text-dim); margin-top: 0.5rem; font-style: italic; letter-spacing: 0.02em; }
+.hero-actions { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+.demo-hint {
+  margin-top: 1.4rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
 }
-.hero h1 { color: #ececec; margin-bottom: 1.2rem; }
-.hero h1 .accent { color: #8aaaaa; }
-.hero h1 .sub {
-  display: block;
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
-  font-weight: 400;
-  color: #6a7a7a;
-  margin-top: 0.5rem;
-  letter-spacing: 0.06em;
-}
-.hero .tagline {
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
-  color: #6a6a6a; max-width: 640px;
-  margin: 0 auto 2.8rem;
-  line-height: 1.7;
-}
-.hero .tagline .en {
-  display: block;
-  font-size: 0.88rem;
-  color: #555;
-  margin-top: 0.4rem;
-  font-style: italic;
-}
-.hero-actions {
-  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
-}
+.demo-hint a { color: var(--accent); border-bottom: 1px dashed var(--accent-border); transition: all 0.2s; }
+.demo-hint a:hover { color: var(--accent); border-bottom-style: solid; }
+.demo-hint code { font-size: 0.78rem; }
 .btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.75rem 1.8rem;
-  border-radius: 8px;
-  font-size: 0.92rem; font-weight: 500;
-  transition: all 0.25s;
-  cursor: pointer;
-  border: none;
-  letter-spacing: 0.02em;
+  padding: 0.7rem 1.6rem; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 500; letter-spacing: 0.02em;
+  transition: all 0.25s; cursor: pointer; border: none; white-space: nowrap;
 }
-.btn-primary {
-  background: rgba(107,142,142,0.18);
-  border: 1px solid rgba(107,142,142,0.38);
-  color: #bccccc;
-}
-.btn-primary:hover {
-  background: rgba(107,142,142,0.28);
-  border-color: rgba(107,142,142,0.55);
-  color: #d0e0e0;
-  transform: translateY(-1px);
-}
-.btn-secondary {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #808080;
-}
-.btn-secondary:hover {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.14);
-  color: #a0a0a0;
-  transform: translateY(-1px);
-}
+.btn-primary { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: #bccccc; }
+.btn-primary:hover { background: var(--btn-primary-hover-bg); border-color: var(--border-strong-hover); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary { background: var(--btn-secondary-bg); border: 1px solid var(--btn-secondary-border); color: var(--text-muted); }
+.btn-secondary:hover { background: var(--btn-secondary-hover-bg); border-color: var(--btn-secondary-hover-border); color: var(--text); transform: translateY(-1px); }
+.btn-secondary:active { transform: translateY(0); }
 
 /* ── Divider ─────────────────────────────────────────────── */
-.section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.12), transparent);
-  max-width: 800px; margin: 0 auto;
-}
+.section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.1), transparent); max-width: 800px; margin: 0 auto; }
 
 /* ── Section Header ──────────────────────────────────────── */
-.section-header { text-align: center; margin-bottom: 5rem; }
-.section-header h2 { color: #dcdcdc; margin-bottom: 0.7rem; }
-.section-header .subtitle { font-size: 1.02rem; max-width: 560px; margin: 0 auto; }
-.section-header .subtitle .en {
-  display: block;
-  font-size: 0.82rem;
-  color: #555;
-  margin-top: 0.35rem;
-}
+.section-header { text-align: center; margin-bottom: 4rem; }
+.section-header h2 { color: var(--text-heading); margin-bottom: 0.6rem; }
+.section-header .subtitle { font-size: 0.96rem; max-width: 580px; margin: 0 auto; color: var(--text-muted); }
+.section-header .subtitle .en { display: block; font-size: 0.78rem; color: var(--text-dim); margin-top: 0.35rem; }
 
 /* ── Badge ───────────────────────────────────────────────── */
 .badge {
-  display: inline-block;
-  padding: 0.3rem 0.9rem;
-  border: 1px solid rgba(107,142,142,0.25);
-  border-radius: 50px;
-  font-size: 0.78rem;
-  color: #8aaaaa;
-  margin-bottom: 1.2rem;
-  letter-spacing: 0.04em;
-  background: rgba(107,142,142,0.06);
+  display: inline-block; padding: 0.28rem 0.85rem;
+  border: 1px solid var(--accent-border); border-radius: 50px;
+  font-size: 0.76rem; color: var(--accent); margin-bottom: 1.1rem;
+  letter-spacing: 0.06em; background: var(--accent-bg);
 }
 
 /* ── Features Grid ───────────────────────────────────────── */
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 1.4rem;
-}
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 1.2rem; }
 .feature-card {
-  background: rgba(255,255,255,0.012);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 14px;
-  padding: 2rem 1.6rem;
-  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.8rem 1.5rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative; overflow: hidden; will-change: transform;
 }
 .feature-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(107,142,142,0.15), transparent);
-  opacity: 0;
-  transition: opacity 0.35s;
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.15), transparent);
+  opacity: 0; transition: opacity 0.3s;
 }
+.feature-card:hover { border-color: var(--border-hover); background: var(--surface-hover); transform: translateY(-2px); }
 .feature-card:hover::before { opacity: 1; }
-.feature-card:hover {
-  border-color: rgba(107,142,142,0.18);
-  background: rgba(107,142,142,0.025);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
 .feature-icon {
-  font-size: 1.7rem; margin-bottom: 1.2rem;
-  width: 48px; height: 48px;
+  font-size: 1.6rem; margin-bottom: 1.1rem; width: 46px; height: 46px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(107,142,142,0.06);
-  border: 1px solid rgba(107,142,142,0.1);
-  border-radius: 12px;
-  transition: all 0.35s;
+  background: var(--accent-bg); border: 1px solid var(--accent-border);
+  border-radius: 12px; transition: all 0.3s;
 }
-.feature-card:hover .feature-icon {
-  background: rgba(107,142,142,0.12);
-  border-color: rgba(107,142,142,0.25);
-}
-.feature-card h3 { color: #c8c8c8; margin-bottom: 0.4rem; font-size: 1.02rem; }
-.feature-card h3 .en { color: #5a6a6a; font-size: 0.75rem; font-weight: 400; display: block; margin-top: 0.15rem; }
-.feature-card p { font-size: 0.875rem; line-height: 1.7; }
+.feature-card:hover .feature-icon { background: var(--accent-bg-hover); border-color: var(--accent-border-hover); }
+.feature-card h3 { color: var(--text-heading); margin-bottom: 0.3rem; }
+.feature-card h3 .en { color: var(--text-dim); font-size: 0.73rem; font-weight: 400; display: block; margin-top: 0.12rem; }
+.feature-card p { font-size: 0.84rem; line-height: 1.75; color: var(--text-muted); }
 
-/* ── Tech Stack ──────────────────────────────────────────── */
-.tech-strip {
-  display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center;
-  margin-top: 1.5rem;
+/* ── Newspaper showcase ──────────────────────────────────── */
+.showcase { position: relative; max-width: 880px; margin: 0 auto; }
+.newspaper {
+  background: var(--newspaper-bg); border: 1px solid var(--newspaper-border);
+  border-radius: 16px; padding: 2rem 2.2rem;
 }
-.tech-tag {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
-  padding: 0.55rem 1.1rem;
-  border-radius: 7px;
-  font-size: 0.84rem;
-  color: #8a8a8a;
-  letter-spacing: 0.02em;
-  transition: all 0.25s;
+.newspaper::before {
+  content: ""; position: absolute; inset: 0; border-radius: 16px;
+  background: radial-gradient(1000px 250px at 50% -40px, var(--hero-glow), transparent);
+  pointer-events: none;
 }
-.tech-tag:hover {
-  border-color: rgba(107,142,142,0.22);
-  color: #b0b0b0;
-  background: rgba(107,142,142,0.04);
-}
+.newspaper .masthead { text-align: center; border-bottom: 1px solid var(--newspaper-divider); padding-bottom: 1.1rem; margin-bottom: 1.4rem; }
+.newspaper .masthead .brand { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.28em; text-indent: 0.28em; color: var(--text-heading); }
+.newspaper .masthead .date { font-size: 0.76rem; color: var(--text-dim); margin-top: 0.35rem; letter-spacing: 0.1em; }
+.newspaper .cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.4rem; text-align: left; }
+.newspaper .headline { font-size: 1.3rem; color: var(--text-heading); font-weight: 600; line-height: 1.5; margin-bottom: 0.6rem; }
+.newspaper .lead { font-size: 0.84rem; color: var(--text-muted); line-height: 1.9; margin-bottom: 0.8rem; }
+.newspaper .col h4 { font-size: 0.78rem; color: var(--accent); letter-spacing: 0.18em; margin-bottom: 0.7rem; font-weight: 600; }
+.newspaper .col ul { list-style: none; }
+.newspaper .col li { font-size: 0.83rem; color: var(--text-muted); padding: 0.5rem 0; border-bottom: 1px dashed var(--newspaper-dashed); line-height: 1.6; }
+.newspaper .col li:last-child { border-bottom: none; }
+.newspaper .col li .tag { color: var(--text-dim); font-size: 0.7rem; margin-right: 0.5rem; }
+.showcase-note { text-align: center; margin-top: 1.4rem; font-size: 0.8rem; color: var(--text-dim); }
+@media (max-width: 768px) { .newspaper { padding: 1.3rem 1rem; } .newspaper .cols { grid-template-columns: 1fr; } }
 
-/* ── Quick Start ─────────────────────────────────────────── */
-.quickstart-grid {
+/* ── 声闻播放器示意（报纸视图以听为主）── */
+.player-row {
+  display: flex; align-items: center; justify-content: center; gap: 2rem;
+  padding: 1.8rem 0; flex-wrap: wrap;
+}
+.vinyl { width: 128px; height: 128px; position: relative; flex-shrink: 0; }
+.vinyl-disc {
+  width: 100%; height: 100%; border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,0.35) 0 7%, transparent 7.5%),
+    repeating-radial-gradient(circle at center, #161616 0 1.5px, #0d0d0d 1.5px 3px);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 0 24px rgba(0,0,0,0.6);
+  animation: spin 6s linear infinite;
+}
+.vinyl-label {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; letter-spacing: 0.05em;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.now-playing { flex: 1; min-width: 240px; max-width: 420px; text-align: left; }
+.np-tag { font-size: 0.72rem; letter-spacing: 0.22em; color: var(--accent-dim); margin-bottom: 0.5rem; }
+.np-title { font-size: 1.25rem; color: var(--text-heading); font-weight: 600; margin-bottom: 0.4rem; line-height: 1.5; }
+.np-meta { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem; }
+.np-progress { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 1.1rem; }
+.np-progress span { display: block; height: 100%; width: 38%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 2px; }
+.np-controls { display: flex; gap: 0.7rem; align-items: center; }
+.np-controls button {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--accent-border); background: var(--accent-bg);
+  color: var(--accent); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.np-controls button:hover { background: var(--accent-bg-hover); border-color: var(--accent-border-hover); }
+.np-controls .np-play { width: 46px; height: 46px; }
+.playlist { border-top: 1px solid var(--newspaper-divider); padding-top: 1.2rem; text-align: left; }
+.playlist h4 { font-size: 0.78rem; color: var(--accent); letter-spacing: 0.18em; margin-bottom: 0.8rem; font-weight: 600; }
+.playlist ul { list-style: none; }
+.playlist li {
+  font-size: 0.84rem; color: var(--text-muted);
+  padding: 0.55rem 0; border-bottom: 1px dashed var(--newspaper-dashed);
+  line-height: 1.6; display: flex; align-items: center; gap: 0.5rem;
+}
+.playlist li:last-child { border-bottom: none; }
+.playlist li .tag { color: var(--text-dim); font-size: 0.72rem; margin-right: 0.2rem; }
+.playlist li em { margin-left: auto; font-style: normal; color: var(--text-dim); font-size: 0.76rem; }
+
+/* ── Preview Screenshots ────────────────────────────────── */
+.preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  margin-top: 1rem;
 }
-.code-block {
-  background: rgba(255,255,255,0.015);
-  border: 1px solid rgba(255,255,255,0.05);
+@media (max-width: 900px) {
+  .preview-grid { grid-template-columns: 1fr; }
+}
+.preview-item {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 1.8rem;
-  position: relative;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.code-block h3 {
-  font-size: 0.88rem; color: #8a8a8a; margin-bottom: 1.2rem;
-  letter-spacing: 0.06em;
+.preview-item:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+.preview-item a { display: block; }
+.preview-item img {
+  width: 100%; height: auto; display: block;
+  border-bottom: 1px solid var(--border);
+  cursor: zoom-in;
+}
+.preview-item figcaption {
+  padding: 0.95rem 1.2rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
   display: flex; align-items: center; gap: 0.6rem;
 }
-.code-block h3 .badge-sm {
-  font-size: 0.7rem;
-  background: rgba(107,142,142,0.12);
-  border: 1px solid rgba(107,142,142,0.2);
-  padding: 0.2em 0.7em;
-  border-radius: 4px;
-  color: #8aaaaa;
-  font-weight: 500;
+.preview-item figcaption::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
 }
-.code-block pre {
-  overflow-x: auto;
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
-  font-size: 0.8rem;
-  line-height: 1.9;
-  color: #b0baba;
-}
-.code-block pre .comment { color: #4a4a4a; }
-.code-block pre .cmd { color: #8aaaaa; }
-.code-block pre .str { color: #7a9a7a; }
-.code-block .hint {
-  display: inline-block; margin-top: 1.4rem;
-  font-size: 0.82rem; color: #6a7a7a;
-  transition: color 0.2s;
-}
-.code-block .hint:hover { color: #8aaaaa; }
 
-/* ── Stats ─────────────────────────────────────────────────── */
-.stats-row {
-  display: flex; flex-wrap: wrap; gap: 3rem; justify-content: center;
-  margin-top: 3rem;
+/* ── Lightbox ────────────────────────────────────────────── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.92);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
 }
-.stat { text-align: center; }
-.stat-num {
-  font-size: 2.6rem; font-weight: 700; color: #bcc8c8;
-  letter-spacing: -0.04em;
+.lightbox.open { opacity: 1; pointer-events: auto; }
+.lightbox img {
+  max-width: 90vw; max-height: 82vh;
+  border-radius: 8px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.6);
 }
-.stat-label { font-size: 0.84rem; color: #5a5a5a; margin-top: 0.3rem; }
-
-/* ── Footer ──────────────────────────────────────────────── */
-footer {
-  border-top: 1px solid rgba(255,255,255,0.04);
-  padding: 3.5rem 0 2.5rem;
-  text-align: center;
-  background: rgba(0,0,0,0.3);
+.lb-caption {
+  position: absolute; bottom: 2.2rem; left: 50%; transform: translateX(-50%);
+  font-size: 0.9rem; color: #aaa;
+  letter-spacing: 0.05em;
+  text-align: center; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-footer .footer-links {
-  display: flex; gap: 2.2rem; justify-content: center; flex-wrap: wrap;
-  list-style: none; margin-bottom: 1.8rem;
+.lb-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #ccc; font-size: 1.7rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  line-height: 1; padding-bottom: 3px;
 }
-footer .footer-links a {
-  font-size: 0.84rem; color: #5a5a5a;
-  transition: color 0.2s;
+.lb-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.lb-prev { left: 1.4rem; }
+.lb-next { right: 1.4rem; }
+.lb-close {
+  position: absolute; top: 1.2rem; right: 1.4rem;
+  width: 40px; height: 40px;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  color: #ccc; font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1; padding-bottom: 2px;
 }
-footer .footer-links a:hover { color: #8aaaaa; }
-footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
-
-/* ── Responsive ──────────────────────────────────────────── */
+.lb-close:hover { background: rgba(255,255,255,0.16); color: #fff; }
 @media (max-width: 768px) {
-  .nav-links { gap: 0.8rem; }
-  .nav-links li:not(:last-child) { display: none; }
-  section { padding: 4.5rem 0; }
-  .hero { padding: 8rem 0 5rem; }
-  .hero h1 { font-size: clamp(1.8rem, 8vw, 2.6rem); }
-  .features-grid { grid-template-columns: 1fr; }
-  .quickstart-grid { grid-template-columns: 1fr; }
-  .container { padding: 0 1.2rem; }
-  .nav-inner { padding: 0 1.2rem; }
-  .stats-row { gap: 1.5rem; }
-  .stat-num { font-size: 2rem; }
+  .lb-prev { left: 0.6rem; }
+  .lb-next { right: 0.6rem; }
+  .lightbox img { max-width: 94vw; }
 }
+
+/* ── Tech Stack ──────────────────────────────────────────── */
+.tech-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 1.2rem; }
+.tech-tag {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.5rem 1rem; border-radius: 7px; font-size: 0.82rem;
+  color: var(--text-muted); letter-spacing: 0.02em; transition: all 0.25s;
+}
+.tech-tag:hover { border-color: var(--border-hover); color: var(--text); background: var(--accent-bg); }
+
+/* ── Quick Start ─────────────────────────────────────────── */
+.quickstart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 1.2rem; }
+.code-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.6rem;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.code-block h3 { font-size: 0.86rem; color: var(--text-muted); margin-bottom: 1.1rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem; }
+.code-block h3 .badge-sm { font-size: 0.68rem; background: var(--accent-bg); border: 1px solid var(--accent-border); padding: 0.18em 0.65em; border-radius: 4px; color: var(--accent); font-weight: 500; }
+.code-block pre { overflow-x: auto; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.77rem; line-height: 1.9; color: var(--text); }
+.code-block pre .comment { color: var(--text-dim); }
+.code-block pre .cmd { color: var(--accent); }
+.code-block pre .str { color: #7a9a7a; }
+.code-block .hint { display: inline-block; margin-top: 1.2rem; font-size: 0.8rem; color: var(--accent-dim); transition: color 0.2s; }
+.code-block .hint:hover { color: var(--accent); }
+
+/* ── Stats ───────────────────────────────────────────────── */
+.stats-row { display: flex; flex-wrap: wrap; gap: 2.5rem; justify-content: center; margin-top: 2.5rem; }
+.stat { text-align: center; }
+.stat-num { font-size: 2.4rem; font-weight: 700; color: var(--accent); letter-spacing: -0.04em; }
+.stat-label { font-size: 0.82rem; color: var(--text-dim); margin-top: 0.25rem; }
 
 /* ── Glass panels ────────────────────────────────────────── */
 .glass-panel {
-  background: rgba(255,255,255,0.015);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 14px;
-  padding: 2rem 1.8rem;
-  transition: all 0.3s;
+  background: var(--surface); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 14px; padding: 1.8rem 1.6rem; transition: all 0.3s;
 }
-.glass-panel:hover {
-  border-color: rgba(107,142,142,0.15);
-  background: rgba(107,142,142,0.02);
+.glass-panel:hover { border-color: var(--border-hover); background: var(--surface-hover); }
+
+/* ── API ─────────────────────────────────────────────────── */
+.api-section-title { color: var(--text-muted); margin: 2.2rem 0 1rem; font-size: 0.84rem; letter-spacing: 0.07em; font-weight: 500; }
+.api-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0.8rem; }
+.api-endpoint { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 1rem 1.2rem; font-size: 0.82rem; transition: all 0.25s; }
+.api-endpoint:hover { border-color: var(--border-hover); background: var(--surface-hover); }
+.api-endpoint .method { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 0.3rem; }
+.api-endpoint .path { font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.78rem; color: var(--text-heading); margin-bottom: 0.3rem; word-break: break-all; }
+.api-endpoint .desc { color: var(--text-dim); font-size: 0.76rem; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--footer-border); padding: 3rem 0 2rem;
+  text-align: center; background: var(--footer-bg);
+}
+footer .footer-links { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; list-style: none; margin-bottom: 1.5rem; }
+footer .footer-links a { font-size: 0.82rem; color: var(--footer-link); transition: color 0.2s; }
+footer .footer-links a:hover { color: var(--footer-link-hover); }
+footer .copyright { font-size: 0.76rem; color: var(--text-faint); line-height: 1.9; }
+footer .copyright .brand { color: var(--text-dim); letter-spacing: 0.18em; }
+
+/* ── Scroll animation system ─────────────────────────────── */
+.reveal {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+
+/* ── Reduced motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
 }
 
-/* ── API Table ───────────────────────────────────────────── */
-.api-section-title {
-  color: #777; margin: 2.5rem 0 1.2rem; font-size: 0.85rem;
-  letter-spacing: 0.08em; font-weight: 500;
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  section { padding: 4rem 0; }
+  .hero { padding: 8rem 0 5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .quickstart-grid { grid-template-columns: 1fr; }
+  .stats-row { gap: 1.5rem; }
+  .stat-num { font-size: 1.8rem; }
+  .api-grid { grid-template-columns: 1fr; }
 }
-.api-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.9rem;
-}
-.api-endpoint {
-  background: rgba(255,255,255,0.012);
-  border: 1px solid rgba(255,255,255,0.035);
-  border-radius: 9px;
-  padding: 1.1rem 1.3rem;
-  font-size: 0.84rem;
-  transition: all 0.25s;
-}
-.api-endpoint:hover {
-  border-color: rgba(107,142,142,0.15);
-  background: rgba(107,142,142,0.02);
-}
-.api-endpoint .method {
-  font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.07em;
-  color: #8aaaaa; margin-bottom: 0.35rem;
-}
-.api-endpoint .path {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "Courier New", monospace;
-  font-size: 0.8rem; color: #c4c4c4;
-  margin-bottom: 0.35rem; word-break: break-all;
-}
-.api-endpoint .desc { color: #5a5a5a; font-size: 0.78rem; }
-
-/* ── Scroll animation ────────────────────────────────────── */
-.fade-in {
-  opacity: 0; transform: translateY(24px);
-  animation: fadeUp 0.7s ease-out forwards;
-}
-@keyframes fadeUp {
-  to { opacity: 1; transform: translateY(0); }
-}
-.delay-1 { animation-delay: 0.12s; }
-.delay-2 { animation-delay: 0.24s; }
-.delay-3 { animation-delay: 0.36s; }
-
-/* ── Chinese text optimizations ──────────────────────────── */
-.zh-text { letter-spacing: 0.03em; }
-.cjk-aware { text-spacing: auto; }
 </style>
 </head>
 <body>
 
+<a href="#features" class="skip-link">跳过导航，直达内容</a>
+
 <!-- ── Navigation ────────────────────────────────────────── -->
 <nav>
   <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      上楼阅读器 <span class="zh">Upstairs Reader</span>
-    </a>
+    <div class="nav-left">
+      <a href="#" class="nav-logo">階上悦读 <span class="en">Upstairs Reader</span></a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换深浅色模式">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+    <button class="hamburger" aria-label="菜单" aria-expanded="false" onclick="document.querySelector('.nav-links').classList.toggle('open');this.classList.toggle('open');this.setAttribute('aria-expanded',this.classList.contains('open'))">
+      <span></span><span></span><span></span>
+    </button>
     <ul class="nav-links">
-      <li><a href="#features">核心特性</a></li>
-      <li><a href="#stack">技术栈</a></li>
-      <li><a href="#quickstart">快速开始</a></li>
-      <li><a href="#api">API 参考</a></li>
-      <li><a href="#deploy">部署方案</a></li>
+      <li><a href="#features" onclick="closeNav()">核心特性</a></li>
+      <li><a href="#reading" onclick="closeNav()">声闻阅读</a></li>
+      <li><a href="#quickstart" onclick="closeNav()">快速开始</a></li>
+      <li><a href="#api" onclick="closeNav()">API 参考</a></li>
+      <li><a href="#deploy" onclick="closeNav()">部署方案</a></li>
+      <li>
+        <a href="https://github.com/ztshia/upstairs-reader" target="_blank" rel="noopener" aria-label="GitHub" class="nav-gh" onclick="closeNav()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </li>
       <li><a href="#quickstart" class="nav-cta">立即部署 →</a></li>
     </ul>
   </div>
@@ -453,25 +581,37 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── Hero ──────────────────────────────────────────────── -->
 <section class="hero">
   <div class="container">
-    <div class="badge fade-in">v1.0 · 开源 &amp; 自托管</div>
-    <h1 class="fade-in delay-1">
-      上楼阅读器
+    <div class="badge reveal">v1.0 · 开源 &amp; 自托管 · 多架构</div>
+    <h1 class="reveal reveal-delay-1">
+      <span class="kicker">— 拾级而上 · 静心阅读 —</span>
+      階上悦读
       <span class="sub">Upstairs Reader</span>
     </h1>
-    <p class="tagline fade-in delay-2">
-      你的信息，<span class="accent">你的掌控</span>。
-      <span class="en">Self-hosted RSS reader with AI summaries, TTS narration, and newspaper-style reading.</span>
+    <p class="tagline reveal reveal-delay-2">
+      阅读是<span class="accent">进步的阶梯</span>，拾级而上，遇见更好的自己。
+      <span class="en">Reading is the ladder of progress — climb one article at a time.</span>
     </p>
-    <div class="hero-actions fade-in delay-3">
+    <div class="hero-actions reveal reveal-delay-3">
+      <a href="https://reader.upstairs.cn" class="btn btn-primary" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Demo
+      </a>
       <a href="#quickstart" class="btn btn-primary">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         快速开始
       </a>
-      <a href="https://github.com" class="btn btn-secondary" target="_blank" rel="noopener">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      <a href="https://hub.docker.com/u/ztshia" class="btn btn-primary" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+        Docker Hub
+      </a>
+      <a href="https://github.com/ztshia/upstairs-reader" class="btn btn-secondary" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
       </a>
     </div>
+    <p class="demo-hint reveal reveal-delay-3">
+      账号 <code>demo</code> / 密码 <code>demodemo</code>
+    </p>
   </div>
 </section>
 
@@ -480,71 +620,141 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── Features ──────────────────────────────────────────── -->
 <section id="features">
   <div class="container">
-    <div class="section-header fade-in">
-      <div class="badge">核心特性 Features</div>
-      <h2>一款 RSS 阅读器，应有尽有</h2>
-      <p class="subtitle">
+    <div class="section-header">
+      <div class="badge reveal">核心特性 Features</div>
+      <h2 class="reveal reveal-delay-1">一款 RSS 阅读器，应有尽有</h2>
+      <p class="subtitle reveal reveal-delay-2">
         为想要完全掌控阅读体验的人而生——无广告、无追踪、无妥协。
         <span class="en">Built for people who want full control. No ads, no tracking, no compromises.</span>
       </p>
     </div>
     <div class="features-grid">
-      <div class="feature-card fade-in">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <h3>多用户支持 <span class="en">Multi-user Support</span></h3>
-        <p>支持注册、登录和独立阅读进度。收藏文章、撰写笔记，构建属于你自己的阅读档案。首位注册用户自动成为管理员。</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h3>多用户支持 <span class="en">Multi-user</span></h3>
+        <p>支持注册、登录和独立阅读进度。收藏文章、撰写笔记，构建你自己的阅读档案。首位注册用户自动成为管理员。</p>
       </div>
-      <div class="feature-card fade-in delay-1">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>AI 智能摘要 <span class="en">AI Summarization</span></h3>
         <p>一键生成文章摘要，兼容所有 OpenAI 格式 API。支持 OpenAI、Azure、阿里云百炼、Ollama 或本地大模型。</p>
       </div>
-      <div class="feature-card fade-in delay-2">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
         <h3>语音朗读 <span class="en">TTS Narration</span></h3>
-        <p>收藏一篇文章，上楼阅读器自动通过 MiMo TTS 生成高质量音频。通勤路上、运动时，随时收听你的阅读列表。</p>
+        <p>收藏一篇文章，階上悦读自动通过 MiMo TTS 生成高质量音频。通勤路上、运动时，随时收听你的阅读列表。</p>
       </div>
-      <div class="feature-card fade-in delay-3">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <h3>报纸视图 <span class="en">Newspaper View</span></h3>
-        <p>精心设计的报纸式阅读模式，带封面大图。像翻阅晨报一样浏览你的订阅源——随机、精选、赏心悦目。</p>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <h3>声闻阅读 <span class="en">Newspaper &amp; Sound</span></h3>
+        <p>报纸式精选阅读，更以听为主：随机内容搭配 TTS 语音合成，像收听一档专属播客——通勤、运动、睡前，闭上眼睛也能读完一天。</p>
       </div>
-      <div class="feature-card fade-in">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        </div>
-        <h3>深色 / 浅色主题 <span class="en">Dark &amp; Light Themes</span></h3>
+      <div class="feature-card reveal">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <h3>智能导览 <span class="en">Smart TOC</span></h3>
+        <p>自动提取文章小标题生成目录，锚点跳转、阅读位置一目了然。再长的文章，也能从容读完。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <h3>深色 / 浅色主题 <span class="en">Dark &amp; Light</span></h3>
         <p>毛玻璃风格界面，自动跟随系统主题。在深色与浅色模式间无缝切换——你的眼睛会感谢你。</p>
       </div>
-      <div class="feature-card fade-in delay-1">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-        </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></div>
         <h3>繁简中文切换 <span class="en">zh-Hant ↔ zh-Hans</span></h3>
         <p>内置繁简中文一键切换。在你偏好的字体下阅读——转换在渲染时完成，不会修改你的原始数据。</p>
       </div>
-      <div class="feature-card fade-in delay-2">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
         <h3>Fever API 兼容 <span class="en">Fever API</span></h3>
-        <p>使用任何支持 Fever API 协议的 RSS 客户端。桌面、平板、手机——你选择自己喜欢的阅读工具。</p>
+        <p>兼容市面主流 RSS 阅读器，如 Reeder、Unread 等可直接对接。桌面、平板、手机——你选择自己喜欢的阅读工具。</p>
       </div>
-      <div class="feature-card fade-in delay-3">
-        <div class="feature-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8aaaaa" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+        <h3>Docker 部署 <span class="en">Docker</span></h3>
+        <p>一条命令，即刻上线。支持 <code>amd64 / arm64</code> 双架构，数据持久化在本地，无需任何外部服务依赖。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Newspaper Showcase ────────────────────────────────── -->
+<section id="reading">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">报纸阅读 · 声闻 Newspaper &amp; Sound</div>
+      <h2 class="reveal reveal-delay-1">像翻阅晨报，更像收听一档专属播客</h2>
+      <p class="subtitle reveal reveal-delay-2">
+        随机精选你的阅读列表，TTS 语音合成缓缓朗读——封面、专栏、头条，都在耳边展开。通勤、运动、睡前，闭上眼睛也能读完一天。
+        <span class="en">Randomly curated from your feeds and read aloud by TTS — headlines, columns, and covers unfold in your ears, wherever you are.</span>
+      </p>
+    </div>
+    <div class="showcase reveal reveal-delay-1">
+      <div class="newspaper">
+        <div class="masthead">
+          <div class="brand">階上声闻</div>
+          <div class="date" id="newspaper-date"></div>
         </div>
-        <h3>Docker 部署 <span class="en">Docker Deployment</span></h3>
-        <p>一条命令，即刻上线。<code>docker compose up -d</code>，数据持久化在本地，无需任何外部服务依赖。</p>
+        <div class="player-row">
+          <div class="vinyl" aria-hidden="true">
+            <div class="vinyl-disc"></div>
+            <div class="vinyl-label">聲</div>
+          </div>
+          <div class="now-playing">
+            <div class="np-tag">正在播放 · NOW PLAYING</div>
+            <div class="np-title">「在楼上，为自己留一盏灯」</div>
+            <div class="np-meta">爱范儿 · 早报 · 约 12 分钟</div>
+            <div class="np-progress"><span></span></div>
+            <div class="np-controls">
+              <button type="button" aria-label="上一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+              <button type="button" class="np-play" aria-label="播放"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+              <button type="button" aria-label="下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="playlist">
+          <h4>播放列表 · 本期精选</h4>
+          <ul>
+            <li><span class="tag">科技</span>半导体行业周报：三个关键信号<em>08:24</em></li>
+            <li><span class="tag">生活</span>把阅读变成习惯的 5 个方法<em>06:12</em></li>
+            <li><span class="tag">设计</span>毛玻璃界面为什么让人舒服<em>04:58</em></li>
+            <li><span class="tag">随笔</span>拾级而上，与一本书重逢<em>07:33</em></li>
+          </ul>
+        </div>
       </div>
+      <p class="showcase-note">↑ 声闻模式示意 —— 你的订阅源，读给你听</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── Preview Screenshots ────────────────────────────────── -->
+<section id="preview">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">产品预览 Preview</div>
+      <h2 class="reveal reveal-delay-1">亲眼看看</h2>
+      <p class="subtitle reveal reveal-delay-2">
+        实际界面截图，所见即所得。
+        <span class="en">Real screenshots from the running app. What you see is what you get.</span>
+      </p>
+    </div>
+    <div class="preview-grid">
+      <figure class="preview-item reveal reveal-delay-1">
+        <img src="../screenshot/声闻页面.png" alt="声闻页面 - 报纸视图与语音朗读" loading="lazy" />
+        <figcaption>声闻页面 · 像播客一样听文章</figcaption>
+      </figure>
+      <figure class="preview-item reveal reveal-delay-2">
+        <img src="../screenshot/详情页暗黑模式.png" alt="详情页暗黑模式 - AI 摘要与目录" loading="lazy" />
+        <figcaption>详情页 · 深色主题 + AI 摘要</figcaption>
+      </figure>
+      <figure class="preview-item reveal reveal-delay-3">
+        <img src="../screenshot/个人页面.png" alt="个人页面 - 公共个人主页" loading="lazy" />
+        <figcaption>个人页面 · 公开收藏与笔记</figcaption>
+      </figure>
     </div>
   </div>
 </section>
@@ -554,15 +764,15 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── Tech Stack ─────────────────────────────────────────── -->
 <section id="stack">
   <div class="container">
-    <div class="section-header fade-in">
-      <div class="badge">技术栈 Tech Stack</div>
-      <h2>简单、熟悉、可控</h2>
-      <p class="subtitle">
+    <div class="section-header">
+      <div class="badge reveal">技术栈 Tech Stack</div>
+      <h2 class="reveal reveal-delay-1">简单、熟悉、可控</h2>
+      <p class="subtitle reveal reveal-delay-2">
         没有复杂的构建流水线，没有前端框架疲劳。干净、可维护的代码，所见即所得。
         <span class="en">No complicated build pipelines. Clean, maintainable code that just works.</span>
       </p>
     </div>
-    <div class="tech-strip fade-in delay-1">
+    <div class="tech-strip reveal reveal-delay-1">
       <span class="tech-tag">Python 3.10+</span>
       <span class="tech-tag">Flask</span>
       <span class="tech-tag">SQLite</span>
@@ -570,25 +780,17 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
       <span class="tech-tag">OpenAI API</span>
       <span class="tech-tag">原生 JavaScript</span>
       <span class="tech-tag">CSS 自定义属性</span>
-      <span class="tech-tag">Docker</span>
+      <span class="tech-tag">Docker · 多架构</span>
       <span class="tech-tag">Docker Compose</span>
       <span class="tech-tag">MiMo TTS</span>
       <span class="tech-tag">Jinja2</span>
       <span class="tech-tag">REST API</span>
     </div>
-    <div class="stats-row fade-in delay-2">
-      <div class="stat">
-        <div class="stat-num">0</div>
-        <div class="stat-label">npm 依赖</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">1</div>
-        <div class="stat-label">条命令部署</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">&infin;</div>
-        <div class="stat-label">订阅源，无限制</div>
-      </div>
+    <div class="stats-row reveal reveal-delay-2">
+      <div class="stat"><div class="stat-num">0</div><div class="stat-label">npm 依赖</div></div>
+      <div class="stat"><div class="stat-num">1</div><div class="stat-label">条命令部署</div></div>
+      <div class="stat"><div class="stat-num">无限制</div><div class="stat-label">订阅源数量</div></div>
+      <div class="stat"><div class="stat-num">2</div><div class="stat-label">架构 · amd64 / arm64</div></div>
     </div>
   </div>
 </section>
@@ -598,49 +800,37 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── Quick Start ────────────────────────────────────────── -->
 <section id="quickstart">
   <div class="container">
-    <div class="section-header fade-in">
-      <div class="badge">快速开始 Quick Start</div>
-      <h2>几分钟内即可上线</h2>
-      <p class="subtitle">
+    <div class="section-header">
+      <div class="badge reveal">快速开始 Quick Start</div>
+      <h2 class="reveal reveal-delay-1">几分钟内即可上线</h2>
+      <p class="subtitle reveal reveal-delay-2">
         只需一条命令。数据持久化在本地，无需任何外部服务。
         <span class="en">One command is all it takes. Data stays local — zero external dependencies.</span>
       </p>
     </div>
-    <div class="quickstart-grid fade-in delay-1">
+    <div class="quickstart-grid reveal reveal-delay-1">
       <div class="code-block">
-        <h3>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          本地开发
-          <span class="badge-sm">Python</span>
-        </h3>
-<pre><span class="comment"># 克隆仓库</span>
-<span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Docker 部署 <span class="badge-sm">镜像 · 多架构</span></h3>
+<pre><span class="comment"># 一条命令上线</span>
+<span class="cmd">docker run</span> -d --name upstairs-reader \
+  -p 5321:5321 \
+  -v $(pwd)/data:/data \
+  -e DB_PATH=/data/rss.db \
+  <span class="str">ztshia/upstairs-reader:latest</span></pre>
+        <a href="https://hub.docker.com/u/ztshia" class="hint" target="_blank" rel="noopener">查看 Docker Hub →</a>
+      </div>
+      <div class="code-block">
+        <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> 本地开发 <span class="badge-sm">Python</span></h3>
+<pre><span class="comment"># 克隆仓库并启动</span>
+<span class="cmd">git clone</span> https://github.com/ztshia/upstairs-reader.git
 <span class="cmd">cd</span> upstairs-reader
-
-<span class="comment"># 安装依赖</span>
 <span class="cmd">pip install</span> -r requirements.txt
-
-<span class="comment"># 启动服务</span>
 <span class="cmd">python</span> app.py</pre>
         <a href="#" class="hint">打开 http://localhost:5321 →</a>
       </div>
-      <div class="code-block">
-        <h3>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-          Docker 部署
-          <span class="badge-sm">Docker</span>
-        </h3>
-<pre><span class="comment"># 克隆仓库并启动</span>
-<span class="cmd">git clone</span> https://github.com/your-username/upstairs-reader.git
-<span class="cmd">cd</span> upstairs-reader
-
-<span class="comment"># 一条命令上线</span>
-<span class="cmd">docker compose up</span> -d</pre>
-        <a href="#" class="hint">打开 http://localhost:5321 →</a>
-      </div>
     </div>
-    <p style="text-align:center; margin-top:2.5rem; font-size:0.84rem; color:#4a4a4a;">
-      💡 首位注册用户自动成为管理员，可以配置 AI 接口、TTS 语音和注册策略。
+    <p style="text-align:center;margin-top:2.2rem;font-size:0.82rem;color:var(--text-dim)">
+      💡 数据保存在 <code>$(pwd)/data/rss.db</code>；Linux 服务器如遇权限问题：<code>chown -R 1000:1000 data</code>。首位注册用户自动成为管理员。
     </p>
   </div>
 </section>
@@ -650,41 +840,37 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── API Reference ──────────────────────────────────────── -->
 <section id="api">
   <div class="container">
-    <div class="section-header fade-in">
-      <div class="badge">API 参考 API Reference</div>
-      <h2>REST API，完整开放</h2>
-      <p class="subtitle">
+    <div class="section-header">
+      <div class="badge reveal">API 参考 API Reference</div>
+      <h2 class="reveal reveal-delay-1">REST API，完整开放</h2>
+      <p class="subtitle reveal reveal-delay-2">
         Web 界面能做的，API 都能做。集成、扩展、自动化，一切尽在掌握。
         <span class="en">Everything the web UI does is available through the API. Integrate, extend, automate.</span>
       </p>
     </div>
-
-    <h3 class="api-section-title fade-in">📡 订阅源管理</h3>
-    <div class="api-grid fade-in delay-1">
+    <h3 class="api-section-title reveal">📡 订阅源管理</h3>
+    <div class="api-grid reveal reveal-delay-1">
       <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/feeds</div><div class="desc">获取所有订阅源及文章数量</div></div>
       <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/feeds</div><div class="desc">通过 URL 添加新订阅源</div></div>
       <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/feeds/:id</div><div class="desc">更新订阅源标题或分组</div></div>
       <div class="api-endpoint"><div class="method">DELETE</div><div class="path">/api/feeds/:id</div><div class="desc">删除订阅源及其所有文章</div></div>
     </div>
-
-    <h3 class="api-section-title fade-in delay-1">📄 文章操作</h3>
-    <div class="api-grid fade-in delay-1">
+    <h3 class="api-section-title reveal reveal-delay-1">📄 文章操作</h3>
+    <div class="api-grid reveal reveal-delay-1">
       <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items</div><div class="desc">获取文章列表，支持筛选与分页</div></div>
       <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/items/:id</div><div class="desc">获取单篇文章详情</div></div>
       <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/read</div><div class="desc">标记已读 / 未读</div></div>
       <div class="api-endpoint"><div class="method">PUT</div><div class="path">/api/items/:id/star</div><div class="desc">切换收藏 → 自动触发 AI 摘要 + TTS</div></div>
     </div>
-
-    <h3 class="api-section-title fade-in delay-2">🔐 认证与设置</h3>
-    <div class="api-grid fade-in delay-2">
+    <h3 class="api-section-title reveal reveal-delay-2">🔐 认证与设置</h3>
+    <div class="api-grid reveal reveal-delay-2">
       <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/register</div><div class="desc">创建新账户</div></div>
       <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/auth/login</div><div class="desc">登录 → 返回 API 密钥</div></div>
       <div class="api-endpoint"><div class="method">POST</div><div class="path">/api/ai/summarize/:id</div><div class="desc">生成 AI 摘要</div></div>
       <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/stats</div><div class="desc">获取订阅源 / 文章 / 未读统计</div></div>
     </div>
-
-    <h3 class="api-section-title fade-in delay-3">🔗 集成接口</h3>
-    <div class="api-grid fade-in delay-3">
+    <h3 class="api-section-title reveal reveal-delay-3">🔗 集成接口</h3>
+    <div class="api-grid reveal reveal-delay-3">
       <div class="api-endpoint"><div class="method">GET / POST</div><div class="path">/api/fever</div><div class="desc">Fever API 端点 → 兼容主流 RSS 客户端</div></div>
       <div class="api-endpoint"><div class="method">GET</div><div class="path">/api/user/:username/profile</div><div class="desc">公开个人主页，含收藏与笔记</div></div>
     </div>
@@ -696,33 +882,18 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <!-- ── Deployment ─────────────────────────────────────────── -->
 <section id="deploy">
   <div class="container">
-    <div class="section-header fade-in">
-      <div class="badge">部署方案 Deployment</div>
-      <h2>随处部署</h2>
-      <p class="subtitle">
+    <div class="section-header">
+      <div class="badge reveal">部署方案 Deployment</div>
+      <h2 class="reveal reveal-delay-1">随处部署</h2>
+      <p class="subtitle reveal reveal-delay-2">
         VPS、家庭服务器、NAS……同一套代码，一致的体验。
         <span class="en">VPS, home server, or NAS — same code, same experience.</span>
       </p>
     </div>
     <div class="features-grid">
-      <div class="glass-panel fade-in">
-        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">☁️ 云服务器 (VPS)</h3>
-        <p style="font-size:0.85rem;">
-          克隆仓库，<code>docker compose up -d</code>，用 nginx 或 Caddy 反向代理将域名指向 <code>localhost:5321</code>，再通过 Let's Encrypt 一键配置 HTTPS。
-        </p>
-      </div>
-      <div class="glass-panel fade-in delay-1">
-        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">🏠 家庭服务器 / 树莓派</h3>
-        <p style="font-size:0.85rem;">
-          只要设备能运行 Python 3.10+ 或 Docker 即可。旧笔记本、树莓派、迷你主机——只要在你的局域网内，就能为你提供阅读服务。
-        </p>
-      </div>
-      <div class="glass-panel fade-in delay-2">
-        <h3 style="color:#c4c4c4; margin-bottom:0.8rem;">📦 NAS（群晖 / 威联通）</h3>
-        <p style="font-size:0.85rem;">
-          安装 Python 3，使用国内镜像加速 pip 安装依赖，然后 <code>python app.py</code>。数据完全存储在你自己的硬件上，隐私无忧。
-        </p>
-      </div>
+      <div class="glass-panel reveal"><h3 style="color:var(--text-heading);margin-bottom:0.7rem">☁️ 云服务器 (VPS)</h3><p style="font-size:0.84rem">拉取镜像 <code>docker run</code> 一条命令，用 nginx 或 Caddy 反向代理将域名指向 <code>localhost:5321</code>，再通过 Let's Encrypt 一键配置 HTTPS。</p></div>
+      <div class="glass-panel reveal reveal-delay-1"><h3 style="color:var(--text-heading);margin-bottom:0.7rem">🏠 家庭服务器 / 树莓派</h3><p style="font-size:0.84rem">镜像支持 <code>amd64 / arm64</code> 双架构——树莓派、迷你主机、旧笔记本，只要在局域网内，就能为你提供阅读服务。</p></div>
+      <div class="glass-panel reveal reveal-delay-2"><h3 style="color:var(--text-heading);margin-bottom:0.7rem">📦 NAS（群晖 / 威联通）</h3><p style="font-size:0.84rem">支持 Docker 的 NAS 直接拉取镜像；或安装 Python 3，使用国内镜像加速 pip 安装依赖后 <code>python app.py</code>。数据完全存储在你的硬件上，隐私无忧。</p></div>
     </div>
   </div>
 </section>
@@ -731,17 +902,112 @@ footer .copyright { font-size: 0.78rem; color: #3a3a3a; line-height: 1.8; }
 <footer>
   <div class="container">
     <ul class="footer-links">
-      <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/LICENSE" target="_blank" rel="noopener">MIT 开源协议</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/issues" target="_blank" rel="noopener">问题反馈</a></li>
-      <li><a href="https://github.com/your-username/upstairs-reader/blob/main/README.md" target="_blank" rel="noopener">项目文档</a></li>
+      <li><a href="https://hub.docker.com/u/ztshia" target="_blank" rel="noopener">Docker Hub</a></li>
+      <li><a href="https://github.com/ztshia/upstairs-reader" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://github.com/ztshia/upstairs-reader/blob/main/LICENSE" target="_blank" rel="noopener">MIT 开源协议</a></li>
+      <li><a href="https://github.com/ztshia/upstairs-reader/issues" target="_blank" rel="noopener">问题反馈</a></li>
+      <li><a href="https://github.com/ztshia/upstairs-reader/blob/main/README.md" target="_blank" rel="noopener">项目文档</a></li>
     </ul>
-    <p class="copyright">
-      Upstairs Reader · 上楼阅读器 &copy; 2025<br>
-      为热爱阅读的人而建 · MIT 开源协议授权
-    </p>
+    <p class="copyright"><span class="brand">階上悦读 Upstairs Reader</span> &copy; 2025-2026<br>拾级而上，静心阅读 · MIT 开源协议授权</p>
   </div>
 </footer>
+
+<!-- ── Lightbox ──────────────────────────────────────────── -->
+<div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-label="图片预览">
+  <button class="lb-close" onclick="closeLightbox()" aria-label="关闭预览">&#10005;</button>
+  <button class="lb-btn lb-prev" onclick="lbNav(-1)" aria-label="上一张">&#8249;</button>
+  <img src="" alt="预览大图">
+  <button class="lb-btn lb-next" onclick="lbNav(1)" aria-label="下一张">&#8250;</button>
+  <div class="lb-caption"></div>
+</div>
+
+<script>
+// ── Theme toggle ─────────────────────────────────────────
+(function() {
+  var stored = localStorage.getItem('theme');
+  if (stored === 'light' || (!stored && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+function toggleTheme() {
+  var el = document.documentElement;
+  var current = el.getAttribute('data-theme');
+  var next = current === 'light' ? '' : 'light';
+  el.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next || 'dark');
+}
+
+// ── Mobile nav ───────────────────────────────────────────
+function closeNav() {
+  document.querySelector('.nav-links').classList.remove('open');
+  var h = document.querySelector('.hamburger');
+  h.classList.remove('open'); h.setAttribute('aria-expanded', 'false');
+}
+
+// ── Scroll reveal ────────────────────────────────────────
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+
+// ── Newspaper date ───────────────────────────────────────
+(function() {
+  var now = new Date();
+  var w = ['日','一','二','三','四','五','六'];
+  var d = now.getFullYear() + ' 年 ' + (now.getMonth()+1) + ' 月 ' + now.getDate() + ' 日';
+  var n = Math.ceil((now - new Date(2025,0,1)) / 86400000);
+  document.getElementById('newspaper-date').textContent = d + ' · 星期' + w[now.getDay()] + ' · 第 ' + n + ' 期';
+})();
+
+// ── Nav scroll highlight ─────────────────────────────────
+(function() {
+  var sections = document.querySelectorAll('section[id]');
+  var links = document.querySelectorAll('.nav-links a[href^="#"]');
+  window.addEventListener('scroll', function() {
+    var current = '';
+    sections.forEach(function(s) { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+    links.forEach(function(a) { a.style.color = a.getAttribute('href') === '#' + current ? '' : ''; });
+  }, { passive: true });
+})();
+
+// ── Screenshot lightbox ──────────────────────────────────
+(function() {
+  var items = Array.prototype.slice.call(document.querySelectorAll('.preview-item img'));
+  var lb = document.getElementById('lightbox');
+  if (!lb || !items.length) return;
+  var idx = 0;
+  function show(i) {
+    idx = (i + items.length) % items.length;
+    var img = lb.querySelector('img');
+    img.src = items[idx].getAttribute('src');
+    img.alt = items[idx].alt || '';
+    var fig = items[idx].closest('figure');
+    var cap = fig ? fig.querySelector('figcaption') : null;
+    lb.querySelector('.lb-caption').textContent = cap ? cap.textContent : '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+  window.closeLightbox = function() {
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
+  window.lbNav = function(d) { show(idx + d); };
+  items.forEach(function(im, i) {
+    im.addEventListener('click', function() { show(i); });
+  });
+  document.addEventListener('keydown', function(e) {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lbNav(-1);
+    else if (e.key === 'ArrowRight') lbNav(1);
+  });
+  lb.addEventListener('click', function(e) { if (e.target === lb) closeLightbox(); });
+})();
+</script>
 
 </body>
 </html>
