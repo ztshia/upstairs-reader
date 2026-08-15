@@ -224,6 +224,7 @@ def init_db():
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_api_url', '')")
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_api_key', '')")
     db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_model', 'mimo-v2.5-tts')")
+    db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('tts_voice', 'mimo_default')")
     # 迁移：给旧表添加 site_url / created_on_time 列
     try:
         db.execute("ALTER TABLE feeds ADD COLUMN site_url TEXT")
@@ -1201,7 +1202,7 @@ def get_ai_settings():
     """获取AI总结 / 语音合成设置"""
     db = get_db()
     keys = ['ai_enabled', 'ai_api_url', 'ai_api_key', 'ai_model', 'ai_min_length', 'ai_provider', 'ai_providers_json',
-            'tts_enabled', 'tts_api_url', 'tts_api_key', 'tts_model']
+            'tts_enabled', 'tts_api_url', 'tts_api_key', 'tts_model', 'tts_voice']
     settings = {}
     for key in keys:
         row = db.execute("SELECT value FROM site_settings WHERE key=?", (key,)).fetchone()
@@ -1275,6 +1276,8 @@ def update_ai_settings():
         db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_key'", (data['tts_api_key'],))
     if 'tts_model' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='tts_model'", (data['tts_model'],))
+    if 'tts_voice' in data:
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_voice'", (data['tts_voice'],))
 
     db.commit()
     return jsonify({"ok": True})
@@ -1386,6 +1389,8 @@ def test_tts_connection():
             },
             json={
                 "model": model,
+                "modalities": ["text", "audio"],
+                "audio": {"voice": _voice_param(model, 'mimo_default'), "format": "wav"},
                 "messages": [
                     {"role": "user", "content": "请朗读。"},
                     {"role": "assistant", "content": "你好，这是一次语音合成连接测试。"}
@@ -1553,6 +1558,21 @@ def summarize_article(item_id):
     return jsonify({"ok": True, "display_name": display_name, "avatar": avatar})
 
 
+def _voice_param(tts_model, tts_voice):
+    """构造 MiMo audio.voice 参数：
+    - 模型为 mimo-v2.5-tts-voiceclone 时，读取项目目录 voice_reference.wav 作为参考音频（data URI）
+    - 其他模型返回预置音色名
+    """
+    if tts_model == 'mimo-v2.5-tts-voiceclone':
+        import base64
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'voice_reference.wav')
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                b64 = base64.b64encode(f.read()).decode('utf-8')
+            return "data:audio/wav;base64," + b64
+    return tts_voice
+
+
 def _tts_endpoint(api_url):
     """归一化 TTS API 地址：兼容完整 /chat/completions 地址或 API 根地址"""
     url = (api_url or "").rstrip("/")
@@ -1592,6 +1612,7 @@ def tts_speak():
         api_key_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_key'").fetchone()
         api_url_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_url'").fetchone()
         model_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_model'").fetchone()
+        voice_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_voice'").fetchone()
         logger.info(f"DB query done: key_exists={bool(api_key_row)}, url_exists={bool(api_url_row)}")
         if enabled_row and enabled_row[0] == '0':
             logger.error("TTS 未开启")
@@ -1600,6 +1621,7 @@ def tts_speak():
             logger.error("TTS API Key 未配置")
             return "TTS API Key 未配置，请在设置中填写", 400
         tts_model = (model_row[0] if model_row and model_row[0] else 'mimo-v2.5-tts')
+        tts_voice = (voice_row[0] if voice_row and voice_row[0] else 'mimo_default')
     except Exception as e:
         logger.error(f"TTS DB error: {type(e).__name__}: {e}")
         return str(e), 500
@@ -1617,6 +1639,8 @@ def tts_speak():
             },
             json={
                 "model": tts_model,
+                "modalities": ["text", "audio"],
+                "audio": {"voice": _voice_param(tts_model, tts_voice), "format": "wav"},
                 "messages": [
                     {"role": "user", "content": "请朗读。"},
                     {"role": "assistant", "content": text}
@@ -1729,18 +1753,22 @@ def _do_tts_for_item(item_id, summary_text=None):
     api_key_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_key'").fetchone()
     api_url_row = db.execute("SELECT value FROM site_settings WHERE key='tts_api_url'").fetchone()
     model_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_model'").fetchone()
+    voice_row   = db.execute("SELECT value FROM site_settings WHERE key='tts_voice'").fetchone()
     if (enabled_row and enabled_row[0] == '0') or not api_key_row or not api_key_row[0] or not api_url_row or not api_url_row[0]:
         logger.error(f"[TTS] API not configured or disabled for item {item_id}")
         db.execute("UPDATE article_summaries SET audio_status='error' WHERE item_id=?", (item_id,))
         db.commit()
         return
     tts_model = (model_row[0] if model_row and model_row[0] else 'mimo-v2.5-tts')
+    tts_voice = (voice_row[0] if voice_row and voice_row[0] else 'mimo_default')
 
     try:
         r = requests.post(
             _tts_endpoint(api_url_row[0]),
             headers={"Authorization": f"Bearer {api_key_row[0]}", "Content-Type": "application/json"},
             json={"model": tts_model,
+                  "modalities": ["text", "audio"],
+                  "audio": {"voice": _voice_param(tts_model, tts_voice), "format": "wav"},
                   "messages": [{"role": "user", "content": "请朗读。"}, {"role": "assistant", "content": summary_text}]},
             timeout=60
         )
