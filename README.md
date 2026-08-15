@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python">
   <img src="https://img.shields.io/badge/flask-2.3+-green" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-red" alt="License">
+  <img src="https://img.shields.io/docker/v/ztshia/upstairs-reader?sort=semver&label=Docker%20Image" alt="Docker Image Version">
+  <img src="https://img.shields.io/docker/pulls/ztshia/upstairs-reader?label=Docker%20Pulls" alt="Docker Pulls">
 </p>
 
 <p align="center">
@@ -27,7 +29,7 @@
 - **个人主页** — 每位用户的公开页面，展示收藏和笔记
 - **深色 / 浅色主题** — 玻璃质感 UI，跟随系统主题自动切换
 - **繁简中文切换** — 内置简体中文 ↔ 繁體中文一键切换
-- **Docker 部署** — `docker run` 一键启动（amd64 / arm64 多架构）
+- **Docker 部署** — [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader) 一键拉取启动（amd64 / arm64 多架构）
 - **Fever API 兼容** — 支持 Fever 协议的 RSS 客户端
 
 ## 截图 Screenshots
@@ -76,7 +78,9 @@ python app.py
 
 ### Docker（推荐）
 
-使用 Docker Hub 镜像（支持 amd64 / arm64 多架构）：
+镜像已发布到 [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader)（`ztshia/upstairs-reader`，amd64 / arm64 多架构），以下三种方式任选其一：
+
+**方式一：`docker run` 一条命令**
 
 ```bash
 docker run -d --name upstairs-reader -p 5321:5321 \
@@ -85,18 +89,32 @@ docker run -d --name upstairs-reader -p 5321:5321 \
   ztshia/upstairs-reader:latest
 ```
 
+**方式二：Docker Compose 拉取镜像（推荐）**
+
+无需克隆仓库，直接使用 `docker-compose.hub.yml`（拉取 Docker Hub 镜像，自动持久化数据 / 音频 / 头像）：
+
+```bash
+curl -O https://raw.githubusercontent.com/ztshia/upstairs-reader/main/docker-compose.hub.yml
+docker compose -f docker-compose.hub.yml up -d
+```
+
+**方式三：Docker Compose 本地构建**
+
+克隆仓库，用自带的 `docker-compose.yml` 从源码构建镜像：
+
+```bash
+git clone https://github.com/ztshia/upstairs-reader.git
+cd upstairs-reader
+docker compose up -d
+```
+
 应用将在 **http://localhost:5321** 可用。
 
 > - 数据库文件为 `rss.db`，保存在宿主机 `$(pwd)/data` 目录（由 volume 挂载 + `DB_PATH` 决定，两者需配套）
 > - 首次启动自动初始化数据库；`TTS 音频缓存` 挂载 `./audio_cache:/app/audio_cache` 可持久化朗读音频
 > - Linux 服务器上如遇写权限错误：`mkdir -p data && chown -R 1000:1000 data`
 > - 第一个注册的用户自动成为管理员
-
-或者使用项目自带的 docker-compose：
-
-```bash
-docker compose up -d
-```
+> - 两个 compose 文件默认使用同名容器 `upstairs-rss`，**二选一运行**，不要同时启动
 
 ## 配置说明
 
@@ -214,7 +232,8 @@ upstairs-reader/
 ├── app.py                 # 主 Flask 应用
 ├── requirements.txt       # Python 依赖
 ├── Dockerfile            # Docker 构建文件
-├── docker-compose.yml    # Docker Compose 配置
+├── docker-compose.yml    # Docker Compose（本地构建）
+├── docker-compose.hub.yml # Docker Compose（拉取 Docker Hub 镜像）
 ├── static/
 │   ├── index.css         # 样式表（深色/浅色主题）
 │   ├── favicon.ico       # 网站图标
@@ -233,7 +252,16 @@ upstairs-reader/
 
 ### Docker（VPS / 家庭服务器 / NAS）
 
-使用 Docker Hub 镜像（amd64 / arm64 多架构）：
+镜像托管在 [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader)，支持 amd64 / arm64 多架构。
+
+推荐用 `docker-compose.hub.yml` 拉取镜像启动（数据 / 音频 / 头像自动持久化）：
+
+```bash
+curl -O https://raw.githubusercontent.com/ztshia/upstairs-reader/main/docker-compose.hub.yml
+docker compose -f docker-compose.hub.yml up -d
+```
+
+或 `docker run` 一条命令：
 
 ```bash
 docker run -d --name upstairs-reader -p 5321:5321 \
@@ -245,14 +273,6 @@ docker run -d --name upstairs-reader -p 5321:5321 \
 - 数据保存在宿主机 `$(pwd)/data/rss.db`（volume 挂载与 `DB_PATH` 需配套）
 - Linux 服务器如遇写权限错误：`mkdir -p data && chown -R 1000:1000 data`
 - 使用 nginx / Caddy 做反向代理，将域名指向 `localhost:5321`，再通过 Let's Encrypt 配置 HTTPS
-
-或使用项目自带的 compose：
-
-```bash
-git clone https://github.com/ztshia/upstairs-reader.git
-cd upstairs-reader
-docker compose up -d
-```
 
 ### 群晖 NAS 部署
 

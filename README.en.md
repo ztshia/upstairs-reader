@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python">
   <img src="https://img.shields.io/badge/flask-2.3+-green" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-red" alt="License">
+  <img src="https://img.shields.io/docker/v/ztshia/upstairs-reader?sort=semver&label=Docker%20Image" alt="Docker Image Version">
+  <img src="https://img.shields.io/docker/pulls/ztshia/upstairs-reader?label=Docker%20Pulls" alt="Docker Pulls">
 </p>
 
 <p align="center">
@@ -27,7 +29,7 @@
 - **Personal profile pages** — Public pages showing starred articles and notes per user
 - **Dark / Light themes** — Glass-morphism UI with system theme detection
 - **Traditional / Simplified Chinese** — Built-in zh-Hant ↔ zh-Hans toggle
-- **Docker support** — One-command deployment with `docker run` (multi-arch: amd64 / arm64)
+- **Docker support** — One-command deployment from [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader) (multi-arch: amd64 / arm64)
 - **Fever API compatible** — Works with RSS clients that support the Fever API protocol
 
 ## Screenshots
@@ -76,7 +78,9 @@ Then open **http://localhost:5321**
 
 ### Docker (Recommended)
 
-Use the Docker Hub image (multi-arch: amd64 / arm64):
+The image is published on [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader) (`ztshia/upstairs-reader`, multi-arch: amd64 / arm64). Pick any one of the three options:
+
+**Option 1: single `docker run` command**
 
 ```bash
 docker run -d --name upstairs-reader -p 5321:5321 \
@@ -85,18 +89,32 @@ docker run -d --name upstairs-reader -p 5321:5321 \
   ztshia/upstairs-reader:latest
 ```
 
+**Option 2: Docker Compose pulling the image (recommended)**
+
+No need to clone the repo — use `docker-compose.hub.yml` (pulls the Docker Hub image, persists data / audio / avatars automatically):
+
+```bash
+curl -O https://raw.githubusercontent.com/ztshia/upstairs-reader/main/docker-compose.hub.yml
+docker compose -f docker-compose.hub.yml up -d
+```
+
+**Option 3: Docker Compose building locally**
+
+Clone the repo and build the image from source with the bundled `docker-compose.yml`:
+
+```bash
+git clone https://github.com/ztshia/upstairs-reader.git
+cd upstairs-reader
+docker compose up -d
+```
+
 The app will be available at **http://localhost:5321**.
 
 > - The database file `rss.db` lives in `$(pwd)/data` on the host (set by the volume mount + `DB_PATH`; both must match)
 > - The database is initialized automatically on first start; mount `./audio_cache:/app/audio_cache` to persist TTS audio
 > - On Linux servers, fix permission issues with: `mkdir -p data && chown -R 1000:1000 data`
 > - The first registered user automatically becomes the administrator
-
-Or use the bundled docker-compose:
-
-```bash
-docker compose up -d
-```
+> - Both compose files use the same container name `upstairs-rss` by default — **run only one of them**, never both at the same time
 
 ## Configuration
 
@@ -214,7 +232,8 @@ upstairs-reader/
 ├── app.py                 # Main Flask application
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile            # Docker build
-├── docker-compose.yml    # Docker Compose config
+├── docker-compose.yml    # Docker Compose (local build)
+├── docker-compose.hub.yml # Docker Compose (pull Docker Hub image)
 ├── static/
 │   ├── index.css         # Stylesheet (dark/light themes)
 │   ├── favicon.ico       # Favicon
@@ -233,7 +252,16 @@ upstairs-reader/
 
 ### Docker (VPS / Home Server / NAS)
 
-Use the Docker Hub image (multi-arch: amd64 / arm64):
+The image is hosted on [Docker Hub](https://hub.docker.com/r/ztshia/upstairs-reader), with multi-arch support (amd64 / arm64).
+
+Recommended: start from the image with `docker-compose.hub.yml` (data / audio / avatars are persisted automatically):
+
+```bash
+curl -O https://raw.githubusercontent.com/ztshia/upstairs-reader/main/docker-compose.hub.yml
+docker compose -f docker-compose.hub.yml up -d
+```
+
+Or a single `docker run`:
 
 ```bash
 docker run -d --name upstairs-reader -p 5321:5321 \
@@ -245,14 +273,6 @@ docker run -d --name upstairs-reader -p 5321:5321 \
 - Data lives in `$(pwd)/data/rss.db` on the host (the volume mount and `DB_PATH` must match)
 - On Linux servers, fix permission errors with: `mkdir -p data && chown -R 1000:1000 data`
 - Use nginx / Caddy as a reverse proxy, point your domain to `localhost:5321`, then set up HTTPS with Let's Encrypt
-
-Or use the bundled compose:
-
-```bash
-git clone https://github.com/ztshia/upstairs-reader.git
-cd upstairs-reader
-docker compose up -d
-```
 
 ### On Synology NAS
 

@@ -1,0 +1,25 @@
+# Upstairs Reader — Docker Hub 镜像版（拉取 ztshia/upstairs-reader:latest，amd64 / arm64）
+# 用法:  docker compose -f docker-compose.hub.yml up -d
+# 停止:  docker compose -f docker-compose.hub.yml down
+# Linux 权限: mkdir -p data audio_cache static/avatars && chown -R 1000:1000 data audio_cache static/avatars
+version: "3.8"
+
+services:
+  upstairs-rss:
+    image: ztshia/upstairs-reader:latest
+    container_name: upstairs-rss
+    restart: unless-stopped
+    ports:
+      - "5321:5321"
+    volumes:
+      - ./data:/data
+      - ./audio_cache:/app/audio_cache
+      - ./static/avatars:/app/static/avatars
+    environment:
+      - DB_PATH=/data/rss.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5321/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
