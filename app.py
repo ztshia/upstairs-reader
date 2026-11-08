@@ -25,6 +25,8 @@ _last_refresh = 0
 _REFRESH_INTERVAL = 30 * 60  # 30分钟刷新一次所有订阅源
 
 app = Flask(__name__)
+# 模板改动后无需重启即可生效（Jinja 默认会缓存已编译模板）
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # ── 禁止缓存 HTML（开发阶段）──
 @app.after_request
@@ -1197,9 +1199,36 @@ def update_registration_setting():
 
 # ── AI设置 API ─────────────────────────────────────────────────────
 
+def _mask_key(key):
+    """生成 API Key 的掩码展示形式（仅供非管理员查看）"""
+    if not key:
+        return ''
+    if len(key) > 8:
+        return key[:4] + '****' + key[-4:]
+    return '****'
+
+
+def _is_key_placeholder(value):
+    """判断提交上来的 key 是否是「未修改」的占位值。
+
+    以下情况都视为「不要动已保存的 key」：
+      - 空字符串 / None / 非字符串 —— 前端没填或清空了输入框
+      - 含有 * 号 —— 前端的掩码占位（sk-a****wxyz）
+    否则一次误保存就会把真实 key 覆盖成空串，导致 AI/语音合成直接失效。
+    """
+    if not isinstance(value, str):
+        return True
+    value = value.strip()
+    return value == '' or '*' in value
+
+
 @app.route("/api/settings/ai", methods=["GET"])
 def get_ai_settings():
-    """获取AI总结 / 语音合成设置"""
+    """获取AI总结 / 语音合成设置
+
+    管理员拿到明文 key（设置页需要回填真实值，否则一保存就把 key 写坏）；
+    其他用户只拿到掩码，避免明文泄露。
+    """
     db = get_db()
     keys = ['ai_enabled', 'ai_api_url', 'ai_api_key', 'ai_model', 'ai_min_length', 'ai_provider', 'ai_providers_json',
             'tts_enabled', 'tts_api_url', 'tts_api_key', 'tts_model', 'tts_voice']
@@ -1207,16 +1236,25 @@ def get_ai_settings():
     for key in keys:
         row = db.execute("SELECT value FROM site_settings WHERE key=?", (key,)).fetchone()
         settings[key] = row[0] if row else ''
-    # 不返回完整的API key，只返回掩码版本
+    # 掩码版本始终返回（兼容旧调用方），明文只给管理员
+    user_id = _current_user_id()
+    is_admin = bool(user_id) and _is_admin(db, user_id)
     for k in ('ai_api_key', 'tts_api_key'):
-        if settings.get(k):
-            key = settings[k]
-            if len(key) > 8:
-                settings[k + '_masked'] = key[:4] + '****' + key[-4:]
-            else:
-                settings[k + '_masked'] = '****'
-        else:
-            settings[k + '_masked'] = ''
+        real = settings.get(k) or ''
+        settings[k + '_masked'] = _mask_key(real)
+        if not is_admin:
+            settings[k] = settings[k + '_masked']
+    # ai_providers_json 里存着各厂商的明文 key，非管理员一律打码
+    if not is_admin and settings.get('ai_providers_json'):
+        import json as _json
+        try:
+            providers = _json.loads(settings['ai_providers_json'])
+            for cfg in providers.values():
+                if isinstance(cfg, dict) and cfg.get('api_key'):
+                    cfg['api_key'] = _mask_key(cfg['api_key'])
+            settings['ai_providers_json'] = _json.dumps(providers, ensure_ascii=False)
+        except Exception:
+            settings['ai_providers_json'] = '{}'
     return jsonify(settings)
 
 
@@ -1249,20 +1287,24 @@ def update_ai_settings():
     import json
     providers_json = db.execute("SELECT value FROM site_settings WHERE key='ai_providers_json'").fetchone()
     providers = json.loads(providers_json[0] if providers_json and providers_json[0] else '{}')
-    
-    # 更新当前厂商的配置
+
+    # 更新当前厂商的配置（key 为空/掩码时沿用已保存的值，避免把 key 写坏）
+    prev_cfg = providers.get(provider) or {}
+    new_key = data.get('ai_api_key', '')
+    if _is_key_placeholder(new_key):
+        new_key = prev_cfg.get('api_key', '')
     providers[provider] = {
-        'api_url': data.get('ai_api_url', ''),
-        'api_key': data.get('ai_api_key', ''),
-        'model': data.get('ai_model', ''),
+        'api_url': data.get('ai_api_url', prev_cfg.get('api_url', '')),
+        'api_key': new_key,
+        'model': data.get('ai_model', prev_cfg.get('model', '')),
     }
     db.execute("UPDATE site_settings SET value=? WHERE key='ai_providers_json'", (json.dumps(providers),))
     
     # 同时更新旧字段保持兼容（当前激活的厂商配置）
     if 'ai_api_url' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='ai_api_url'", (data['ai_api_url'],))
-    if 'ai_api_key' in data and '****' not in data['ai_api_key']:
-        db.execute("UPDATE site_settings SET value=? WHERE key='ai_api_key'", (data['ai_api_key'],))
+    if 'ai_api_key' in data and not _is_key_placeholder(data['ai_api_key']):
+        db.execute("UPDATE site_settings SET value=? WHERE key='ai_api_key'", (data['ai_api_key'].strip(),))
     if 'ai_model' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='ai_model'", (data['ai_model'],))
 
@@ -1272,8 +1314,8 @@ def update_ai_settings():
                    ('1' if data['tts_enabled'] else '0',))
     if 'tts_api_url' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_url'", (data['tts_api_url'],))
-    if 'tts_api_key' in data and '****' not in data['tts_api_key']:
-        db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_key'", (data['tts_api_key'],))
+    if 'tts_api_key' in data and not _is_key_placeholder(data['tts_api_key']):
+        db.execute("UPDATE site_settings SET value=? WHERE key='tts_api_key'", (data['tts_api_key'].strip(),))
     if 'tts_model' in data:
         db.execute("UPDATE site_settings SET value=? WHERE key='tts_model'", (data['tts_model'],))
     if 'tts_voice' in data:
@@ -1305,11 +1347,12 @@ def test_ai_connection():
     model = model_row[0] if model_row else ''
     
     # 如果请求中提供了新的设置，使用新设置测试
+    # （key 是空串/掩码占位时，直接沿用库里已保存的真实 key）
     data = request.json or {}
     if data.get('api_url'):
         api_url = data['api_url']
-    if data.get('api_key'):
-        api_key = data['api_key']
+    if not _is_key_placeholder(data.get('api_key')):
+        api_key = data['api_key'].strip()
     if data.get('model'):
         model = data['model']
     
@@ -1368,16 +1411,20 @@ def test_tts_connection():
     model   = model_row[0] if model_row else ''
 
     # 如果请求中提供了新的设置，使用新设置测试（不落库）
+    # （key 是空串/掩码占位时，直接沿用库里已保存的真实 key）
     data = request.json or {}
     if data.get('api_url'):
         api_url = data['api_url']
-    if data.get('api_key') and not data['api_key'].startswith('****'):
-        api_key = data['api_key']
+    if not _is_key_placeholder(data.get('api_key')):
+        api_key = data['api_key'].strip()
     if data.get('model'):
         model = data['model']
 
     if not api_url or not api_key or not model:
         return jsonify({"ok": False, "error": "请填写完整的语音合成设置"}), 400
+
+    # voiceclone 缺参考音频时自动降级，避免直接 400
+    test_model, test_voice, note = _resolve_tts_params(model, 'mimo_default')
 
     # 发送测试请求（与 tts_speak 相同的调用格式）
     try:
@@ -1388,9 +1435,9 @@ def test_tts_connection():
                 "Content-Type": "application/json"
             },
             json={
-                "model": model,
+                "model": test_model,
                 "modalities": ["text", "audio"],
-                "audio": {"voice": _voice_param(model, 'mimo_default'), "format": "wav"},
+                "audio": {"voice": test_voice, "format": "wav"},
                 "messages": [
                     {"role": "user", "content": "请朗读。"},
                     {"role": "assistant", "content": "你好，这是一次语音合成连接测试。"}
@@ -1404,7 +1451,8 @@ def test_tts_connection():
         audio_b64 = data["choices"][0]["message"]["audio"]["data"]
         if not audio_b64:
             return jsonify({"ok": False, "error": "响应中未包含音频数据"}), 400
-        return jsonify({"ok": True, "message": "连接成功"})
+        msg = "连接成功" + (f"（{note}）" if note else "")
+        return jsonify({"ok": True, "message": msg, "note": note})
     except (KeyError, IndexError, TypeError):
         return jsonify({"ok": False, "error": "响应格式异常，请确认 API 地址与模型是否正确"}), 400
     except requests.exceptions.Timeout:
@@ -1558,19 +1606,41 @@ def summarize_article(item_id):
     return jsonify({"ok": True, "display_name": display_name, "avatar": avatar})
 
 
-def _voice_param(tts_model, tts_voice):
-    """构造 MiMo audio.voice 参数：
-    - 模型为 mimo-v2.5-tts-voiceclone 时，读取项目目录 voice_reference.wav 作为参考音频（data URI）
-    - 其他模型返回预置音色名
+def _voice_reference_data_url():
+    """读取项目根目录的 voice_reference.wav，转成 DataURL；不存在返回空串"""
+    import base64
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'voice_reference.wav')
+    if not os.path.exists(path):
+        return ''
+    with open(path, 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode('utf-8')
+    return "data:audio/wav;base64," + b64
+
+
+def _resolve_tts_params(tts_model, tts_voice):
+    """解析真正发给 API 的 (model, voice, note)。
+
+    voiceclone 模型要求 audio.voice 必须是参考音频的 DataURL，缺参考音频时
+    API 会直接回 400 Param Incorrect。这里自动降级为标准模型，保证能出声，
+    并通过 note 告诉调用方发生了什么。
     """
-    if tts_model == 'mimo-v2.5-tts-voiceclone':
-        import base64
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'voice_reference.wav')
-        if os.path.exists(path):
-            with open(path, 'rb') as f:
-                b64 = base64.b64encode(f.read()).decode('utf-8')
-            return "data:audio/wav;base64," + b64
-    return tts_voice
+    tts_model = tts_model or 'mimo-v2.5-tts'
+    tts_voice = tts_voice or 'mimo_default'
+    if 'voiceclone' in tts_model:
+        ref = _voice_reference_data_url()
+        if ref:
+            return tts_model, ref, ''
+        fallback = 'mimo-v2.5-tts' if tts_model.startswith('mimo') else tts_model
+        note = '未找到 voice_reference.wav，已自动降级为标准模型 mimo-v2.5-tts'
+        # 降级后音色必须是预置音色名，不能是 DataURL
+        voice = tts_voice if not tts_voice.startswith('data:') else 'mimo_default'
+        return fallback, voice, note
+    return tts_model, tts_voice, ''
+
+
+def _voice_param(tts_model, tts_voice):
+    """兼容旧调用：只返回 voice 参数（voiceclone 缺参考音频时会降级）"""
+    return _resolve_tts_params(tts_model, tts_voice)[1]
 
 
 def _tts_endpoint(api_url):
@@ -1628,9 +1698,13 @@ def tts_speak():
 
     import requests
     import base64
+    # voiceclone 缺参考音频时自动降级，避免直接 400
+    tts_model, tts_voice_param, _tts_note = _resolve_tts_params(tts_model, tts_voice)
+    if _tts_note:
+        logger.warning(f"[TTS] {_tts_note}")
     try:
         # 小米 MiMo TTS 通过 chat/completions 调用，audio 在 message 中
-        logger.info(f"Calling MiMo API: url={api_url_row[0]}, key_len={len(api_key_row[0])}, text_len={len(text)}")
+        logger.info(f"Calling MiMo API: url={api_url_row[0]}, key_len={len(api_key_row[0])}, text_len={len(text)}, model={tts_model}")
         r = requests.post(
             _tts_endpoint(api_url_row[0]),
             headers={
@@ -1640,7 +1714,7 @@ def tts_speak():
             json={
                 "model": tts_model,
                 "modalities": ["text", "audio"],
-                "audio": {"voice": _voice_param(tts_model, tts_voice), "format": "wav"},
+                "audio": {"voice": tts_voice_param, "format": "wav"},
                 "messages": [
                     {"role": "user", "content": "请朗读。"},
                     {"role": "assistant", "content": text}
@@ -1762,13 +1836,18 @@ def _do_tts_for_item(item_id, summary_text=None):
     tts_model = (model_row[0] if model_row and model_row[0] else 'mimo-v2.5-tts')
     tts_voice = (voice_row[0] if voice_row and voice_row[0] else 'mimo_default')
 
+    # voiceclone 缺参考音频时自动降级，避免直接 400
+    tts_model, tts_voice_param, _tts_note = _resolve_tts_params(tts_model, tts_voice)
+    if _tts_note:
+        logger.warning(f"[TTS] item {item_id}: {_tts_note}")
+
     try:
         r = requests.post(
             _tts_endpoint(api_url_row[0]),
             headers={"Authorization": f"Bearer {api_key_row[0]}", "Content-Type": "application/json"},
             json={"model": tts_model,
                   "modalities": ["text", "audio"],
-                  "audio": {"voice": _voice_param(tts_model, tts_voice), "format": "wav"},
+                  "audio": {"voice": tts_voice_param, "format": "wav"},
                   "messages": [{"role": "user", "content": "请朗读。"}, {"role": "assistant", "content": summary_text}]},
             timeout=60
         )

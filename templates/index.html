@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="階上悦读" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>階上悦读</title>
-  <link rel="stylesheet" href="/static/index.css?v=114" />
+  <link rel="stylesheet" href="/static/index.css?v=115" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -429,6 +429,7 @@
               <div class="settings-section">
                 <label class="settings-label"><i class="fas fa-cube"></i> <span data-i18n="model_name_label">模型名称</span></label>
                 <input id="settings-tts-model" type="text" class="settings-input" style="margin-top:8px" placeholder="mimo-v2.5-tts" data-i18n-placeholder="tts_model_ph" />
+                <div style="font-size:11px;color:var(--text3);margin-top:4px">用 <code>mimo-v2.5-tts-voiceclone</code> 需把参考音频放到项目根目录 <code>voice_reference.wav</code>，否则会自动降级为 <code>mimo-v2.5-tts</code></div>
               </div>
               <div class="settings-section">
                 <button id="settings-tts-test" class="settings-btn-secondary" style="width:100%" onclick="testTtsConnection()"><i class="fas fa-plug"></i> <span data-i18n="test_connection">测试连接</span></button>
@@ -959,6 +960,8 @@ async function fetchAiSettings() {
     if (providerSelect) {
       providerSelect.value = savedProvider;
       applyProviderConfig(savedProvider, providersData);
+      // providers_json 里没有该厂商的 key 时，回退到站点当前生效的 key
+      if (keyInput && !keyInput.value && d.ai_api_key) keyInput.value = d.ai_api_key;
     }
 
     // 服务商下拉切换：清空/恢复 key 和 model
@@ -986,7 +989,8 @@ async function fetchAiSettings() {
     const ttsKeyInput = document.getElementById("settings-tts-key");
     const ttsModelInput = document.getElementById("settings-tts-model");
     if (ttsUrlInput) ttsUrlInput.value = d.tts_api_url || '';
-    if (ttsKeyInput) ttsKeyInput.value = d.tts_api_key_masked || '';
+    // 回填真实 key（不是掩码）——否则一保存就把 key 写坏，语音合成直接失效
+    if (ttsKeyInput) ttsKeyInput.value = d.tts_api_key || '';
     if (ttsModelInput) ttsModelInput.value = d.tts_model || 'mimo-v2.5-tts';
     // 根据已保存的 URL 自动匹配 TTS 服务商
     const ttsProviderSelect = document.getElementById("settings-tts-provider");
@@ -1077,9 +1081,10 @@ async function testAiConnection() {
   const resultEl = document.getElementById("ai-test-result");
   if (!btn) return;
   
-  // 获取当前表单值
+  // 获取当前表单值（key 是掩码/空时留空，后端会用已保存的真实 key）
   const url = document.getElementById("settings-ai-url")?.value || '';
-  const key = document.getElementById("settings-ai-key")?.value || '';
+  const rawKey = document.getElementById("settings-ai-key")?.value || '';
+  const key = rawKey.includes('*') ? '' : rawKey;
   const model = document.getElementById("settings-ai-model")?.value || '';
   
   btn.disabled = true;
@@ -1137,9 +1142,10 @@ async function testTtsConnection() {
   const resultEl = document.getElementById("tts-test-result");
   if (!btn) return;
 
-  // 获取当前表单值
+  // 获取当前表单值（key 是掩码/空时留空，后端会用已保存的真实 key）
   const url = document.getElementById("settings-tts-url")?.value || '';
-  const key = document.getElementById("settings-tts-key")?.value || '';
+  const rawKey = document.getElementById("settings-tts-key")?.value || '';
+  const key = rawKey.includes('*') ? '' : rawKey;
   const model = document.getElementById("settings-tts-model")?.value || 'mimo-v2.5-tts';
 
   btn.disabled = true;
@@ -1157,7 +1163,8 @@ async function testTtsConnection() {
     const d = await res.json();
     if (d.ok) {
       resultEl.style.color = 'var(--primary)';
-      resultEl.textContent = t("test_success");
+      // 后端可能带降级说明（voiceclone 缺参考音频），优先展示
+      resultEl.textContent = d.message || t("test_success");
     } else {
       resultEl.style.color = 'var(--danger)';
       resultEl.textContent = d.error || t("test_failed");
@@ -1199,26 +1206,32 @@ async function saveAiSettings() {
   const ttsKey = document.getElementById("settings-tts-key")?.value || '';
   const ttsModel = document.getElementById("settings-tts-model")?.value || 'mimo-v2.5-tts';
 
+  const payload = {
+    ai_provider: provider,
+    provider_config: {
+      api_url: url,
+      api_key: key,
+      model: model,
+    },
+    ai_api_url: url,
+    ai_model: model,
+    ai_min_length: minLength,
+    tts_api_url: ttsUrl,
+    tts_model: ttsModel
+  };
+  // 只提交真正填了值的 key：空值 / 掩码一律不提交，免得把库里已保存的 key 冲掉
+  if (key && !key.includes('*')) payload.ai_api_key = key;
+  if (ttsKey && !ttsKey.includes('*')) payload.tts_api_key = ttsKey;
+  // 开关状态未知（还没加载完）时不要提交，避免误关语音合成
+  if (ttsToggleBtn && ttsToggleBtn.dataset.enabled !== undefined) {
+    payload.tts_enabled = ttsToggleBtn.dataset.enabled === '1';
+  }
+
   try {
     const res = await authFetch("/settings/ai", {
       method: "PUT",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        ai_provider: provider,
-        provider_config: {
-          api_url: url,
-          api_key: key,
-          model: model,
-        },
-        ai_api_url: url,
-        ai_api_key: key,
-        ai_model: model,
-        ai_min_length: minLength,
-        tts_enabled: ttsToggleBtn ? ttsToggleBtn.dataset.enabled === '1' : true,
-        tts_api_url: ttsUrl,
-        tts_api_key: ttsKey,
-        tts_model: ttsModel
-      })
+      body: JSON.stringify(payload)
     });
     const d = await res.json();
     if (d.ok) {
@@ -1788,8 +1801,8 @@ function showDetail(idx) {
   initAudioPlayers();
 
     // ── 高亮工具 ─────────────────────────────────────────────────
-  // 策略: TreeWalker 建立字符→(node,absOffset)映射 → 在扁平字符空间中搜索 →
-  // 同一文本节点内的匹配用 splitText 包裹，跨节点用 Range.surroundContents
+  // 策略：把 Range 覆盖到的每一个文本节点都各自包进 <mark>，不移动任何块级节点，
+  // 所以跨段落、跨 <b>/<a> 的选区每一段都会有下划线，正文结构也不会被打乱。
   function _flatChars(container) {
     const segs = [];
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
@@ -1799,139 +1812,147 @@ function showDetail(idx) {
     }
     const flat = [];
     for (const n of segs) {
-      for (let i = 0; i < n.textContent.length; i++) {
-        flat.push({ node: n, abs: i });
-      }
+      for (let i = 0; i < n.textContent.length; i++) flat.push({ node: n, abs: i });
     }
     return { segs, flat };
   }
 
-  function _wrapSingleNode(node, so, eo, num, noteText) {
+  function _clampOff(node, off) {
+    const len = node.textContent.length;
+    return Math.max(0, Math.min(off, len));
+  }
+
+  // 按 DOM 路径找文本节点（中途允许元素节点，只有最后一层必须是文本节点）
+  function _resolvePath(container, path) {
+    if (!Array.isArray(path) || !path.length) return null;
+    let node = container;
+    for (const idx of path) {
+      if (!node) return null;
+      node = node.childNodes[idx];
+    }
+    return node && node.nodeType === 3 ? node : null;
+  }
+
+  // 核心：把 [startNode,so) ~ [endNode,eo) 覆盖到的所有文本节点逐段包进 <mark>
+  function _wrapRange(startNode, so, endNode, eo, num, noteText, root) {
     try {
-      const left = node.splitText(so);
-      const right = left.splitText(eo - so);
-      const mark = document.createElement("mark");
-      mark.className = "annotation";
-      mark.dataset.note = noteText || "";
-      mark.dataset.index = num;
-      mark.id = "annotation-" + num;
+      const range = document.createRange();
+      range.setStart(startNode, _clampOff(startNode, so));
+      range.setEnd(endNode, _clampOff(endNode, eo));
+      if (range.collapsed) return false;
+
+      const container = root || range.commonAncestorContainer;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+      const targets = [];
+      let t;
+      while ((t = walker.nextNode())) {
+        if (t.textContent.length && range.intersectsNode(t)) targets.push(t);
+      }
+      if (!targets.length) return false;
+
+      const first = targets[0];
+      const last = targets[targets.length - 1];
+      const marks = [];
+      for (const node of targets) {
+        const len = node.textContent.length;
+        const s = node === first ? _clampOff(node, so) : 0;
+        const e = node === last ? _clampOff(node, eo) : len;
+        if (e <= s) continue;
+        let target = node;
+        if (s > 0 && s < target.textContent.length) target = target.splitText(s);
+        const keep = e - s;
+        if (keep < target.textContent.length) target.splitText(keep);
+        const mark = document.createElement("mark");
+        mark.className = "annotation";
+        mark.dataset.note = noteText || "";
+        mark.dataset.index = num;
+        target.parentNode.insertBefore(mark, target);
+        mark.appendChild(target);
+        marks.push(mark);
+      }
+      if (!marks.length) return false;
+      marks[0].id = "annotation-" + num;
       const sup = document.createElement("sup");
       sup.className = "annotation-ref";
       sup.textContent = "[" + num + "]";
-      mark.appendChild(left);
-      mark.appendChild(sup);
-      right.parentNode.replaceChild(mark, right);
+      marks[marks.length - 1].appendChild(sup);
       return true;
-    } catch(e) { return false; }
+    } catch (e) {
+      return false;
+    }
   }
 
-  // 跨节点高亮包裹：保留中间 HTML 结构（<br>、<p> 等），只用 <mark> 包裹首尾文本节点边缘
-  function _wrapByRange(startNode, so, endNode, eo, num, noteText) {
-    const sup = document.createElement("sup");
-    sup.className = "annotation-ref";
-    sup.textContent = "[" + num + "]";
-    function annotate(el) {
-      el.className = "annotation";
-      el.dataset.note = noteText || "";
-      el.dataset.index = num;
-      el.id = "annotation-" + num;
-    }
-    // 同一节点：简单 splitText
-    if (startNode === endNode) {
-      try {
-        return _wrapSingleNode(startNode, so, eo, num, noteText);
-      } catch(e) { return false; }
-    }
-    try {
-      // 跨节点：对首尾文本节点做 splitText，把切出来的部分包在 mark 里
-      const head = startNode.splitText(so);
-      const tail = endNode.splitText(eo);
-      // 收集 head 到 tail 之间的所有节点
-      const r = document.createRange();
-      r.setStartBefore(head);
-      r.setEndAfter(tail.previousSibling || tail);
-      // 用 extractContents 拿到中间所有节点（保留结构）
-      const frag = r.extractContents();
-      // 找到 frag 里第一个和最后一个文本节点，包进 mark
-      const firstTN = _firstText(frag);
-      const lastTN = _lastText(frag);
-      if (firstTN) {
-        const m1 = document.createElement("mark");
-        annotate(m1);
-        firstTN.parentNode.insertBefore(m1, firstTN);
-        m1.appendChild(firstTN);
-        m1.appendChild(sup);
+  // 归一化字符 → flat 下标的映射，用于忽略空白差异地定位文本
+  function _buildMap(flat, squashAll) {
+    let s = "";
+    const map = [];
+    let prevSpace = false;
+    for (let i = 0; i < flat.length; i++) {
+      const ch = flat[i].node.textContent[flat[i].abs];
+      if (/\s/.test(ch)) {
+        if (squashAll) continue;
+        if (!prevSpace) { s += " "; map.push(i); prevSpace = true; }
+      } else {
+        s += ch; map.push(i); prevSpace = false;
       }
-      if (lastTN && lastTN !== firstTN) {
-        const m2 = document.createElement("mark");
-        annotate(m2);
-        m2.id = ""; // 避免重复 id
-        lastTN.parentNode.insertBefore(m2, lastTN);
-        m2.appendChild(lastTN);
-      }
-      // 把 frag 插回 DOM
-      r.insertNode(frag);
-      return true;
-    } catch(e) { return false; }
-  }
-  function _firstText(node) {
-    if (node.nodeType === 3 && node.textContent.length) return node;
-    for (const c of node.childNodes) { const f = _firstText(c); if (f) return f; }
-    return null;
-  }
-  function _lastText(node) {
-    if (node.nodeType === 3 && node.textContent.length) return node;
-    for (let i = node.childNodes.length - 1; i >= 0; i--) { const l = _lastText(node.childNodes[i]); if (l) return l; }
-    return null;
+    }
+    return { s, map };
   }
 
-  // 跨节点高亮: 在扁平字符空间中找「文字完全匹配」的起点和终点
-  // 首尾节点之间允许有其他节点，只要边界字符能对上就用 Range.surroundContents
-  function highlightNote(container, noteText, num, noteContent) {
+  // 兜底：按文字内容搜索（路径失效或正文被重新抓取时用），支持指定第几次出现
+  function highlightByText(container, noteText, num, noteContent, occ) {
     if (!noteText) return false;
-    const { segs, flat } = _flatChars(container);
-    if (flat.length < noteText.length) return false;
-
-    // 清理 noteText 的空白，合并成单空格方便匹配带格式的文本
-    const cleanNote = noteText.replace(/[\s\n\r]+/g, " ").trim();
-    const needLen = cleanNote.length;
-
-    for (let startIdx = 0; startIdx <= flat.length - needLen; startIdx++) {
-      const startNode = flat[startIdx].node;
-      const startAbs  = flat[startIdx].abs;
-
-      // 从 startIdx 开始，收集连续 needLen 个字符（跨节点允许）
-      let pos = startIdx;
-      let chars = [];
-      while (pos < flat.length && chars.length < needLen) {
-        chars.push(flat[pos].node.textContent[flat[pos].abs]);
-        pos++;
+    const { flat } = _flatChars(container);
+    if (!flat.length) return false;
+    const passes = [
+      { squash: false, needle: noteText.replace(/\s+/g, " ").trim() },
+      { squash: true, needle: noteText.replace(/\s+/g, "") },
+    ];
+    for (const pass of passes) {
+      if (!pass.needle) continue;
+      const { s: hay, map } = _buildMap(flat, pass.squash);
+      let from = 0, found = -1, seen = -1;
+      while (true) {
+        const p = hay.indexOf(pass.needle, from);
+        if (p < 0) break;
+        seen++;
+        if (typeof occ !== "number" || occ < 0 || seen === occ) { found = p; break; }
+        from = p + 1;
       }
-
-      const candidate = chars.join("");
-      // 模糊匹配: 忽略空白差异（两边都去掉空白比较）
-      const candClean = candidate.replace(/\s+/g, " ").trim();
-      if (candClean.length >= needLen) {
-        // 用 candClean 在 candidate 中找 noteText 的位置
-        const m = candidate.indexOf(cleanNote);
-        if (m >= 0) {
-          const sNode = flat[startIdx + m].node;
-          const sOff  = flat[startIdx + m].abs;
-          const eIdx  = startIdx + m + needLen - 1;
-          const eNode = flat[eIdx].node;
-          const eOff  = flat[eIdx].abs + 1;
-          try {
-            return _wrapByRange(sNode, sOff, eNode, eOff, num, noteContent);
-          } catch(e) { /* fall through */ }
-        }
-      }
-
-      // 跳到下个节点
-      let next = startIdx + 1;
-      while (next < flat.length && flat[next].node === startNode) next++;
-      startIdx = next - 1;
+      if (found < 0) continue;
+      const sIdx = map[found];
+      const eIdx = map[found + pass.needle.length - 1];
+      if (sIdx === undefined || eIdx === undefined) continue;
+      const sNode = flat[sIdx].node, sOff = flat[sIdx].abs;
+      const eNode = flat[eIdx].node, eOff = flat[eIdx].abs + 1;
+      if (_wrapRange(sNode, sOff, eNode, eOff, num, noteContent, container)) return true;
     }
     return false;
+  }
+
+  // 记录选中文字在正文中是第几次出现（区分重复句子）
+  function countOccurrence(container, text, beforeNode, beforeOffset) {
+    const needle = (text || "").replace(/\s+/g, " ").trim();
+    if (!needle) return 0;
+    const { flat } = _flatChars(container);
+    const { s: hay, map } = _buildMap(flat, false);
+    let flatIdx = -1;
+    for (let i = 0; i < flat.length; i++) {
+      if (flat[i].node === beforeNode && flat[i].abs === beforeOffset) { flatIdx = i; break; }
+    }
+    let limit = hay.length;
+    if (flatIdx >= 0) {
+      const normIdx = map.indexOf(flatIdx);
+      if (normIdx >= 0) limit = normIdx;
+    }
+    let count = 0, from = 0;
+    while (true) {
+      const p = hay.indexOf(needle, from);
+      if (p < 0 || p >= limit) break;
+      count++;
+      from = p + 1;
+    }
+    return count;
   }
 
   // ── 渲染批注 ─────────────────────────────────────────────────
@@ -1944,18 +1965,17 @@ function showDetail(idx) {
           if (!n.text || !n.note) return;
           const num = i + 1;
           const container = $("#detail-content");
-          // 优先用路径精确重建
+          // 优先用 DOM 路径精确重建（正文结构未变时最准）
           let applied = false;
-          if (n.startPath && n.endPath && Array.isArray(n.startPath) && Array.isArray(n.endPath)) {
-            let sN = container, eN = container;
-            for (const idx of n.startPath) { sN = sN.childNodes[idx]; if (!sN || sN.nodeType !== 3) { sN = null; break; } }
-            for (const idx of n.endPath)   { eN = eN.childNodes[idx]; if (!eN || eN.nodeType !== 3) { eN = null; break; } }
+          if (Array.isArray(n.startPath) && Array.isArray(n.endPath)) {
+            const sN = _resolvePath(container, n.startPath);
+            const eN = _resolvePath(container, n.endPath);
             if (sN && eN) {
-              applied = _wrapByRange(sN, n.startOffset, eN, n.endOffset, num, n.note);
+              applied = _wrapRange(sN, n.startOffset, eN, n.endOffset, num, n.note, container);
             }
           }
-          // 兜底:TreeWalker 全局搜索
-          if (!applied) highlightNote(container, n.text, num, n.note);
+          // 兜底: 按文字内容搜索（正文被重新抓取 / 结构变化时）
+          if (!applied) highlightByText(container, n.text, num, n.note, n.occ);
           const deleteBtn = currentUser ? `<button class="note-delete" data-index="${i}">×</button>` : '';
           noteList.push(`<div class="note-item" id="note-${num}"><span class="note-num">${num}.</span><span class="note-text">${esc(n.note)}</span><a href="#annotation-${num}" class="note-back">↑</a>${deleteBtn}</div>`);
         });
@@ -2378,6 +2398,8 @@ $("#modal-note-save").addEventListener("click", async () => {
         return p;
       })(),
       endOffset: rng.endOffset,
+      // 记录是第几次出现的相同文字，避免刷新后标到前面那句重复的话上
+      occ: countOccurrence($("#detail-content"), rng.toString(), rng.startContainer, rng.startOffset),
     });
   }
 

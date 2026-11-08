@@ -958,6 +958,10 @@ mark.annotation {
 mark.annotation:hover {
   background: linear-gradient(120deg, rgba(107,142,142,0.3) 0%, rgba(107,142,142,0.4) 100%);
 }
+/* 跨段落时同一处批注会被拆成多个 mark，去掉相邻段之间多余的内边距，视觉上连成一片 */
+mark.annotation + mark.annotation {
+  padding-left: 0;
+}
 mark.annotation::after {
   content: attr(data-note);
   position: absolute;
@@ -972,7 +976,11 @@ mark.annotation::after {
   line-height: 1.5;
   color: var(--text);
   white-space: pre-wrap;
-  max-width: 300px;
+  /* mark 是 inline 且 position:relative，气泡的包含块是它最后一行那段窄盒子，
+     不给 width 就会按那几字宽去收缩换行（几个字被拆成好几行）。max-content 让它
+     先按不换行的整行宽度撑开，再由 max-width 兜住超长批注。 */
+  width: max-content;
+  max-width: min(300px, calc(100vw - 40px));
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   z-index: 100;
   opacity: 0;
